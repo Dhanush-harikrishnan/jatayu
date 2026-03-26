@@ -21,7 +21,7 @@ export function StudentLogin() {
     try {
       const response = await fetchApi('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ userId: email, examId: 'EXAM-101' }), // Mocking examId for now
+        body: JSON.stringify({ email, password, examId: 'EXAM-101' }), // Real authentication
       });
 
       if (response.success && response.data?.token) {
@@ -203,13 +203,21 @@ export function StudentLogin() {
         </button>
       </form>
 
-      {/* Help Link */}
-      <p className="mt-6 text-center text-sm text-white/60">
-        Need help?{' '}
-        <a href="#" className="text-cyan hover:text-cyan-light transition-colors">
-          Contact Support
-        </a>
-      </p>
+      {/* Help Link & Admin */}
+      <div className="mt-6 flex flex-col items-center gap-2 text-sm text-white/60">
+        <p>
+          Need help?{' '}
+          <a href="#" className="text-cyan hover:text-cyan-light transition-colors">
+            Contact Support
+          </a>
+        </p>
+        <p>
+          Are you an administrator?{' '}
+          <button onClick={() => window.location.href = '/admin/login'} className="text-cyan hover:text-cyan-light transition-colors">
+            Admin Login
+          </button>
+        </p>
+      </div>
     </AuthLayout>
   );
 }

@@ -31,14 +31,45 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
   const [screenPermission, setScreenPermission] = useState<boolean | null>(null);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [livenessSessionId, setLivenessSessionId] = useState<string | null>(null);
   const [livenessPassed, setLivenessPassed] = useState<boolean>(false);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Generate pairing code on mount
   useEffect(() => {
     setPairingCode(generatePairingCode());
+  }, []);
+
+  const [reqStatus, setReqStatus] = useState({
+    internet: 'checking' as 'checking' | 'passed' | 'failed' | 'pending',
+    camera: 'pending' as 'checking' | 'passed' | 'failed' | 'pending',
+    mic: 'pending' as 'checking' | 'passed' | 'failed' | 'pending',
+    screen: 'pending' as 'checking' | 'passed' | 'failed' | 'pending'
+  });
+
+  // Simulate preparation checks
+  useEffect(() => {
+    if (currentStep === 0) {
+      setReqStatus({ internet: 'checking', camera: 'pending', mic: 'pending', screen: 'pending' });
+      const timer1 = setTimeout(() => setReqStatus(s => ({ ...s, internet: 'passed', camera: 'checking' })), 1500);
+      const timer2 = setTimeout(() => setReqStatus(s => ({ ...s, camera: 'passed', mic: 'checking' })), 3000);
+      const timer3 = setTimeout(() => setReqStatus(s => ({ ...s, mic: 'passed', screen: 'checking' })), 4500);
+      const timer4 = setTimeout(() => setReqStatus(s => ({ ...s, screen: 'passed' })), 6000);
+      return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3); clearTimeout(timer4); };
+    }
+  }, [currentStep]);
+
+  // Prevent accidental navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Are you sure you want to leave the exam setup?';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   // Connect backend pairing
@@ -58,11 +89,6 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       };
 
       pairDevice();
-
-      const timer = setTimeout(() => {
-        setIsPaired(true);
-      }, 8000);
-      return () => clearTimeout(timer);
     }
   }, [currentStep, isPaired, examId]);
 
@@ -73,9 +99,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
         .then((stream) => {
           setCameraPermission(true);
           setMicPermission(true);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
+          setMediaStream(stream);
         })
         .catch(() => {
           setCameraPermission(false);
@@ -83,6 +107,24 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
         });
     }
   }, [currentStep, cameraPermission]);
+
+  // Attach stream to video element when it mounts
+  useEffect(() => {
+    if (videoRef.current && mediaStream && currentStep === 2) {
+      videoRef.current.srcObject = mediaStream;
+    }
+  }, [videoRef.current, mediaStream, currentStep]);
+
+  const requestScreenShare = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      setScreenPermission(true);
+      // Stop the stream since this is only a permission check in Setup
+      stream.getTracks().forEach(t => t.stop());
+    } catch {
+      setScreenPermission(false);
+    }
+  };
 
   // Liveness Session
   useEffect(() => {
@@ -227,25 +269,25 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     icon={Wifi}
                     title="Stable Internet"
                     description="Minimum 2 Mbps upload/download speed required"
-                    status="checking"
+                    status={reqStatus.internet}
                   />
                   <RequirementCard
                     icon={Camera}
                     title="Working Camera"
                     description="Webcam must be functional and unobstructed"
-                    status="pending"
+                    status={reqStatus.camera}
                   />
                   <RequirementCard
                     icon={Volume2}
                     title="Microphone"
                     description="Required for audio monitoring during exam"
-                    status="pending"
+                    status={reqStatus.mic}
                   />
                   <RequirementCard
                     icon={Maximize}
                     title="Full Screen"
                     description="Exam must be taken in fullscreen mode"
-                    status="pending"
+                    status={reqStatus.screen}
                   />
                 </div>
 
@@ -265,8 +307,27 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer hover:text-white transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={rulesAccepted} 
+                      onChange={e => setRulesAccepted(e.target.checked)} 
+                      className="rounded border-cyan/30 text-cyan focus:ring-cyan bg-navy-800"
+                    />
+                    I understand and agree to the proctoring rules
+                  </label>
+                </div>
+
                 <div className="flex justify-end">
-                  <button onClick={handleNextStep} className="btn-primary flex items-center gap-2">
+                  <button 
+                    onClick={handleNextStep} 
+                    disabled={reqStatus.screen !== 'passed' || !rulesAccepted}
+                    className={cn(
+                      'btn-primary flex items-center gap-2',
+                      (reqStatus.screen !== 'passed' || !rulesAccepted) && 'opacity-50 cursor-not-allowed'
+                    )}
+                  >
                     Continue to Pairing
                     <ArrowRight className="h-4 w-4" />
                   </button>
@@ -311,6 +372,15 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     <p className="mt-4 text-sm text-text-secondary text-center">
                       Open camera app and scan to pair automatically
                     </p>
+                    
+                    {!isPaired && (
+                      <button 
+                        onClick={() => setIsPaired(true)}
+                        className="mt-6 px-4 py-2 bg-cyan/10 text-cyan border border-cyan/20 rounded-lg hover:bg-cyan/20 transition-colors w-full text-sm font-medium"
+                      >
+                        [Dev] Simulate Mobile App Scan
+                      </button>
+                    )}
                   </div>
 
                   {/* Pairing Code */}
@@ -480,8 +550,9 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                       label="Screen Recording"
                       status={screenPermission}
                       successText="Ready to record"
-                      errorText="Permission needed"
-                      onCheck={() => setScreenPermission(true)}
+                      errorText="Permission denied"
+                      actionText="Allow Screen"
+                      onCheck={requestScreenShare}
                     />
                     <StatusCheckItem
                       label="Browser Lockdown"
@@ -662,10 +733,11 @@ interface StatusCheckItemProps {
   status: boolean | null;
   successText: string;
   errorText?: string;
+  actionText?: string;
   onCheck?: () => void;
 }
 
-function StatusCheckItem({ label, status, successText, errorText, onCheck }: StatusCheckItemProps) {
+function StatusCheckItem({ label, status, successText, errorText, actionText, onCheck }: StatusCheckItemProps) {
   return (
     <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
       <div className="flex items-center gap-3">
@@ -673,6 +745,8 @@ function StatusCheckItem({ label, status, successText, errorText, onCheck }: Sta
           <CheckCircle className="h-5 w-5 text-success" />
         ) : status === false ? (
           <AlertCircle className="h-5 w-5 text-violation" />
+        ) : actionText ? (
+          <Laptop className="h-5 w-5 text-warning" />
         ) : (
           <div className="h-5 w-5 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
         )}
@@ -685,7 +759,7 @@ function StatusCheckItem({ label, status, successText, errorText, onCheck }: Sta
           status === false ? 'text-violation' : 
           'text-text-secondary'
         )}>
-          {status === true ? successText : status === false ? errorText : 'Checking...'}
+          {status === true ? successText : status === false ? errorText : (actionText ? 'Permission Required' : 'Checking...')}
         </span>
         {status === false && onCheck && (
           <button 
@@ -693,6 +767,14 @@ function StatusCheckItem({ label, status, successText, errorText, onCheck }: Sta
             className="text-xs text-cyan hover:text-cyan-light"
           >
             Retry
+          </button>
+        )}
+        {status === null && actionText && onCheck && (
+          <button 
+            onClick={onCheck}
+            className="text-xs px-2 py-1 rounded bg-cyan/20 text-cyan hover:bg-cyan/30"
+          >
+            {actionText}
           </button>
         )}
       </div>

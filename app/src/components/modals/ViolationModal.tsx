@@ -81,6 +81,10 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
     setShowTerminateConfirm(false);
   };
 
+  const rekogData = selectedViolation?.metadata?.faceDetails?.length 
+    ? selectedViolation.metadata 
+    : mockRekognitionData;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -486,12 +490,12 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                         <div>
                           <div className="flex justify-between text-sm mb-1">
                             <span className="text-text-secondary">Detection Confidence</span>
-                            <span className="text-white">{mockRekognitionData.faceDetails[0].confidence}%</span>
+                            <span className="text-white">{rekogData.faceDetails[0].confidence}%</span>
                           </div>
                           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-cyan rounded-full"
-                              style={{ width: `${mockRekognitionData.faceDetails[0].confidence}%` }}
+                              style={{ width: `${rekogData.faceDetails[0].confidence}%` }}
                             />
                           </div>
                         </div>
@@ -500,7 +504,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                         <div>
                           <span className="text-sm text-text-secondary">Detected Emotions</span>
                           <div className="mt-2 space-y-2">
-                            {mockRekognitionData.faceDetails[0].emotions.map((emotion) => (
+                            {rekogData.faceDetails[0].emotions.map((emotion) => (
                               <div key={emotion.type} className="flex items-center justify-between">
                                 <span className="text-sm text-white">{emotion.type}</span>
                                 <span className="text-sm text-cyan">{emotion.confidence}%</span>
@@ -515,11 +519,11 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           <div className="mt-2 grid grid-cols-2 gap-2">
                             <div className="p-2 rounded bg-white/5">
                               <span className="text-xs text-text-secondary">Yaw</span>
-                              <p className="text-sm text-white">{mockRekognitionData.faceDetails[0].eyeGaze.yaw}°</p>
+                              <p className="text-sm text-white">{rekogData.faceDetails[0].eyeGaze.yaw}°</p>
                             </div>
                             <div className="p-2 rounded bg-white/5">
                               <span className="text-xs text-text-secondary">Pitch</span>
-                              <p className="text-sm text-white">{mockRekognitionData.faceDetails[0].eyeGaze.pitch}°</p>
+                              <p className="text-sm text-white">{rekogData.faceDetails[0].eyeGaze.pitch}°</p>
                             </div>
                           </div>
                         </div>
@@ -528,7 +532,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                         <div className="flex gap-2">
                           <span className={cn(
                             'px-2 py-1 rounded text-xs',
-                            mockRekognitionData.faceDetails[0].eyeglasses.value 
+                            rekogData.faceDetails[0].eyeglasses.value 
                               ? 'bg-cyan/20 text-cyan' 
                               : 'bg-white/10 text-white/60'
                           )}>
@@ -536,7 +540,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           </span>
                           <span className={cn(
                             'px-2 py-1 rounded text-xs',
-                            mockRekognitionData.faceDetails[0].sunglasses.value 
+                            rekogData.faceDetails[0].sunglasses.value 
                               ? 'bg-cyan/20 text-cyan' 
                               : 'bg-white/10 text-white/60'
                           )}>
@@ -554,7 +558,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                       </h3>
                       
                       <div className="space-y-3">
-                        {mockRekognitionData.labels.map((label) => (
+                        {rekogData.labels.map((label) => (
                           <div key={label.name} className="flex items-center justify-between p-2 rounded bg-white/5">
                             <span className="text-sm text-white">{label.name}</span>
                             <div className="flex items-center gap-2">
@@ -574,7 +578,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                       <div className="mt-6">
                         <h4 className="text-sm text-text-secondary mb-3">Content Moderation</h4>
                         <div className="space-y-2">
-                          {mockRekognitionData.moderation.map((item) => (
+                          {rekogData.moderation.map((item) => (
                             <div key={item.name} className="flex items-center justify-between p-2 rounded bg-white/5">
                               <span className="text-sm text-white">{item.name}</span>
                               <span className={cn(

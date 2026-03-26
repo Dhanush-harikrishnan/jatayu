@@ -6,6 +6,7 @@ import path from 'path';
 import { errorHandler } from './middlewares/errorHandler';
 import { authRoutes } from './routes/authRoute';
 import { examRoutes } from './routes/examRoute';
+import { dashboardRoutes } from './routes/dashboardRoute';
 import { awsService } from './services/awsService';
 
 export const configureApp = (): Application => {
@@ -37,6 +38,7 @@ export const configureApp = (): Application => {
   // Routes
   app.use('/auth', authRoutes);
   app.use('/exam', examRoutes);
+  app.use('/dashboard', dashboardRoutes);
 
   // Global Error Handler
   app.use(errorHandler);

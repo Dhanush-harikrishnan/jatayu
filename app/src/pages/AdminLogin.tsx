@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, AlertCircle, Shield, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, AlertCircle, Shield } from 'lucide-react';
 import { AuthLayout } from '@/components/layouts/AuthLayout';
 import { cn } from '@/lib/utils';
 import { fetchApi } from '@/lib/api';
@@ -24,14 +24,16 @@ export function AdminLogin() {
       // For Admin, we still hit the same mock endpoint for demo
       const response = await fetchApi('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ userId: email, examId: 'ADMIN-PORTAL' }),
+        body: JSON.stringify({ email, password, examId: 'ADMIN-PORTAL' }),
       });
 
-      if (response.success && response.data?.token) {
-        localStorage.setItem('adminToken', response.data.token);
+      if (response.success && (response.data?.requires2FA || response.data?.token)) {
+        if (response.data?.token) {
+           localStorage.setItem('adminToken', response.data.token);
+        }
         setRequires2FA(true);
       } else {
-        setError('Invalid credentials. Please try again.');
+        setError(response.message || 'Invalid credentials. Please try again.');
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
@@ -43,19 +45,28 @@ export function AdminLogin() {
   const handle2FASubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await fetchApi('/auth/verify-2fa', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp: otpCode }),
+      });
 
-    if (otpCode.length === 6) {
-      setSuccess(true);
-      setTimeout(() => {
-        window.location.href = '/admin/dashboard';
-      }, 1000);
-    } else {
-      setError('Invalid verification code');
+      if (response.success && response.data?.token) {
+        localStorage.setItem('adminToken', response.data.token);
+        setSuccess(true);
+        setTimeout(() => {
+          window.location.href = '/admin/dashboard';
+        }, 1000);
+      } else {
+        setError(response.message || 'Invalid verification code');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Verification failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -189,11 +200,11 @@ export function AdminLogin() {
 
             <div className="text-center">
               <div className="mx-auto h-16 w-16 rounded-full bg-cyan/10 flex items-center justify-center mb-4">
-                <User className="h-8 w-8 text-cyan" />
+                <Mail className="h-8 w-8 text-cyan" />
               </div>
-              <h3 className="font-sora text-lg font-semibold text-white">Two-Factor Authentication</h3>
+              <h3 className="font-sora text-lg font-semibold text-white">Email Authentication</h3>
               <p className="text-sm text-text-secondary mt-1">
-                Enter the 6-digit code from your authenticator app
+                Enter the 6-digit code sent to your admin email
               </p>
             </div>
 

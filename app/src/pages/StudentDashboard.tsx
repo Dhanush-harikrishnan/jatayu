@@ -7,58 +7,11 @@ import {
 } from 'lucide-react';
 import { cn, formatDateTime, formatDuration } from '@/lib/utils';
 import type { Exam } from '@/types';
+import { fetchApi } from '@/lib/api';
 
-// Mock exam data
-const mockExams: Exam[] = [
-  {
-    id: 'exam-1',
-    title: 'Advanced Mathematics Final',
-    description: 'Comprehensive examination covering calculus, linear algebra, and differential equations.',
-    duration: 180,
-    startTime: new Date(Date.now() + 86400000),
-    endTime: new Date(Date.now() + 86400000 + 180 * 60000),
-    status: 'upcoming',
-    totalQuestions: 50,
-    passingScore: 70,
-    instructions: [
-      'Ensure stable internet connection',
-      'Prepare your student ID for verification',
-      'Find a quiet, well-lit room',
-      'Have your mobile phone ready for pairing',
-    ],
-    allowedAttempts: 1,
-  },
-  {
-    id: 'exam-2',
-    title: 'Data Structures & Algorithms',
-    description: 'Mid-term assessment on fundamental data structures and algorithm complexity.',
-    duration: 120,
-    startTime: new Date(Date.now() - 172800000),
-    endTime: new Date(Date.now() - 172800000 + 120 * 60000),
-    status: 'completed',
-    totalQuestions: 40,
-    passingScore: 60,
-    instructions: [],
-    allowedAttempts: 1,
-  },
-  {
-    id: 'exam-3',
-    title: 'Machine Learning Basics',
-    description: 'Quiz on supervised and unsupervised learning concepts.',
-    duration: 60,
-    startTime: new Date(Date.now() - 3600000),
-    endTime: new Date(Date.now() + 3600000),
-    status: 'active',
-    totalQuestions: 30,
-    passingScore: 75,
-    instructions: [
-      'Camera and microphone access required',
-      'Screen sharing will be enabled',
-      'No external resources allowed',
-    ],
-    allowedAttempts: 2,
-  },
-];
+// Initial empty state for exams
+const mockExams: Exam[] = [];
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -83,8 +36,16 @@ const itemVariants = {
 };
 
 export function StudentDashboard() {
-  const [exams] = useState<Exam[]>(mockExams);
+  const [exams, setExams] = useState<Exam[]>(mockExams);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    fetchApi('/dashboard/student/exams').then(res => {
+      if (res.success && res.data) {
+        setExams(res.data);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);

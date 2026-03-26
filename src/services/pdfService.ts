@@ -37,7 +37,9 @@ export const generatePdfReport = async (data: ReportData): Promise<Buffer> => {
       doc.moveDown();
 
       if (data.violations.length === 0) {
-        doc.fontSize(12).text('No violations detected during the assessment.', { italic: true });
+        doc.font('Helvetica-Oblique')
+           .fontSize(12)
+           .text('No violations detected during the assessment.');
       } else {
         data.violations.forEach((v, index) => {
           doc.fontSize(12).text(`${index + 1}. Type: ${v.type}`);

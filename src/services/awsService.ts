@@ -1,7 +1,7 @@
 import { RekognitionClient, DetectFacesCommand, DetectLabelsCommand, CreateFaceLivenessSessionCommand, GetFaceLivenessSessionResultsCommand } from '@aws-sdk/client-rekognition';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { DynamoDBClient, PutItemCommand, ListTablesCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, PutItemCommand, ListTablesCommand, GetItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { SESClient, SendEmailCommand, SendRawEmailCommand } from '@aws-sdk/client-ses';
 import { config } from '../config/env';
 import { logger } from '../logger';
@@ -37,6 +37,28 @@ export const awsService = {
     } catch (err) {
       logger.error('Database connection check failed:', err);
       return false;
+    }
+  },
+
+  getUserByEmail: async (email: string) => {
+    try {
+      const command = new GetItemCommand({
+        TableName: 'SecureGuardUsers',
+        Key: { email: { S: email } }
+      });
+      const result = await dynamoClient.send(command);
+      if (!result.Item) return null;
+      return {
+        email: result.Item.email.S,
+        passwordHash: result.Item.passwordHash?.S,
+        role: result.Item.role?.S,
+        name: result.Item.name?.S,
+        otp: result.Item.otp?.S,
+        otpExpiry: result.Item.otpExpiry?.S
+      };
+    } catch (err) {
+      logger.error(`Failed to get user by email ${email}:`, err);
+      throw err;
     }
   },
 
@@ -154,16 +176,20 @@ export const awsService = {
     }
   },
 
-  logViolationEvent: async (sessionId: string, timestamp: string, violationType: string, s3Key: string) => {
+  logViolationEvent: async (sessionId: string, timestamp: string, violationType: string, s3Key: string, metadata?: any) => {
+    const item: any = {
+      SessionId: { S: sessionId },
+      'EventTime#ViolationType': { S: `${timestamp}#${violationType}` },
+      EventTime: { S: timestamp },
+      ViolationType: { S: violationType },
+      EvidenceKey: { S: s3Key },
+    };
+    if (metadata) {
+      item.Metadata = { S: JSON.stringify(metadata) };
+    }
     const command = new PutItemCommand({
       TableName: config.aws.dynamoDbTableName,
-      Item: {
-        SessionId: { S: sessionId },
-        'EventTime#ViolationType': { S: `${timestamp}#${violationType}` },
-        EventTime: { S: timestamp },
-        ViolationType: { S: violationType },
-        EvidenceKey: { S: s3Key },
-      },
+      Item: item,
     });
     return dynamoClient.send(command);
   },
@@ -186,6 +212,50 @@ export const awsService = {
         logger.info(`Magic link email sent successfully to ${toEmail}`);
     } catch (err) {
         logger.error(`Failed to send magic link email:`, err);
+        throw err;
+    }
+  },
+
+  saveUserOTP: async (email: string, otp: string, expiry: string) => {
+    const command = new UpdateItemCommand({
+      TableName: 'SecureGuardUsers',
+      Key: { email: { S: email } },
+      UpdateExpression: 'SET otp = :otp, otpExpiry = :expiry',
+      ExpressionAttributeValues: {
+        ':otp': { S: otp },
+        ':expiry': { S: expiry }
+      }
+    });
+    return dynamoClient.send(command);
+  },
+
+  clearUserOTP: async (email: string) => {
+    const command = new UpdateItemCommand({
+      TableName: 'SecureGuardUsers',
+      Key: { email: { S: email } },
+      UpdateExpression: 'REMOVE otp, otpExpiry',
+    });
+    return dynamoClient.send(command);
+  },
+
+  sendOTPEmail: async (toEmail: string, otp: string) => {
+    const command = new SendEmailCommand({
+      Destination: { ToAddresses: [toEmail] },
+      Message: {
+        Body: {
+          Text: { Data: `Your SecureGuard Pro admin login verification code is: ${otp}` },
+          Html: { Data: `<h1>Admin Login Verification</h1><p>Your verification code is: <strong>${otp}</strong></p><p>This code will expire in 5 minutes.</p>` },
+        },
+        Subject: { Data: 'SecureGuard Pro - Admin Login Code' },
+      },
+      Source: config.aws.sesSourceEmail,
+    });
+    
+    try {
+        await sesClient.send(command);
+        logger.info(`OTP email sent successfully to ${toEmail}`);
+    } catch (err) {
+        logger.error(`Failed to send OTP email:`, err);
         throw err;
     }
   },

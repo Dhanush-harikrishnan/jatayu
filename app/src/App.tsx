@@ -163,10 +163,16 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
 
           <div className="hidden lg:flex items-center gap-4">
             <button 
+              onClick={() => navigate('/admin/login')}
+              className="text-sm text-white/70 hover:text-white transition-colors"
+            >
+              Admin Portal
+            </button>
+            <button 
               onClick={() => navigate('/login')}
               className="text-sm text-white/70 hover:text-white transition-colors"
             >
-              Log in
+              Student Log in
             </button>
             <button 
               onClick={() => navigate('/login')}
@@ -201,10 +207,16 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
                 <a href="#pricing" className="block text-white/70 hover:text-white">Pricing</a>
                 <hr className="border-white/10" />
                 <button 
+                  onClick={() => navigate('/admin/login')}
+                  className="block w-full text-left text-white/70 hover:text-white"
+                >
+                  Admin Portal
+                </button>
+                <button 
                   onClick={() => navigate('/login')}
                   className="block w-full text-left text-white/70 hover:text-white"
                 >
-                  Log in
+                  Student Log in
                 </button>
                 <button 
                   onClick={() => navigate('/login')}

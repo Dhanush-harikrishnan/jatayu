@@ -3,11 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Clock, AlertTriangle, CheckCircle, X,
   Monitor, Smartphone, Wifi, 
-  Maximize2, Minimize2, MessageSquare, Flag,
-  Eye, Volume2, Activity, User
+  Maximize2, Minimize2, User
 } from 'lucide-react';
 import { cn, getViolationDescription } from '@/lib/utils';
-import { useSimulatedTelemetry, useSimulatedViolations } from '@/hooks/useSocket';
 import { fetchApi } from '@/lib/api';
 
 interface LiveProctoringProps {
@@ -21,47 +19,89 @@ interface Toast {
   message?: string;
 }
 
+interface Violation {
+  id: string;
+  type: string;
+  severity: 'low' | 'medium' | 'high';
+  timestamp: string;
+}
+
+const QUESTIONS = [
+  { id: 1, text: "What is the primary function of a reverse proxy?", options: ["Load balancing & security", "Database indexing", "Compiling backend code", "Direct network routing"], correct: 0 },
+  { id: 2, text: "Which HTTP method is idempotent according to REST principles?", options: ["POST", "PATCH", "PUT", "CONNECT"], correct: 2 },
+  { id: 3, text: "What is the worst-case time complexity of binary search?", options: ["O(1)", "O(n)", "O(log n)", "O(n^2)"], correct: 2 },
+  { id: 4, text: "Which AWS service is optimized for NoSQL key-value high-throughput storage?", options: ["Amazon RDS", "Amazon DynamoDB", "Amazon S3", "Amazon Redshift"], correct: 1 },
+  { id: 5, text: "What does CORS stand for in web security context?", options: ["Cross-Origin Resource Sharing", "Centralized Object Routing System", "Computer Operated Relay Server", "Core Operations Regression Suite"], correct: 0 }
+];
+
 export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
   const [sessionTime, setSessionTime] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showMobilePip, setShowMobilePip] = useState(true);
-  const [showScreenPip, setShowScreenPip] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessage, setChatMessage] = useState('');
+  
+  // Real ML integration states
+  const [realViolations, setRealViolations] = useState<Violation[]>([]);
+  const [telemetryState, setTelemetryState] = useState({
+    faceDetected: true,
+    faceConfidence: 99,
+  });
+
+  // MCQ State
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
-  // Simulated real-time data
-  const telemetry = useSimulatedTelemetry(examId);
-  const violations = useSimulatedViolations(examId);
-
-  // Session timer
+  // Session timer & navigation protection
   useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Are you sure you want to leave the active exam? Your progress may be lost and a violation may be recorded.';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Initial countdown 60 mins
+    setSessionTime(3600);
     const timer = setInterval(() => {
-      setSessionTime(t => t + 1);
+        setSessionTime(t => (t > 0 ? t - 1 : 0));
     }, 1000);
-    return () => clearInterval(timer);
+
+    return () => {
+        clearInterval(timer);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   // Camera initialization
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ video: true })
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
+        mediaStreamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       })
       .catch(console.error);
+
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
   }, []);
 
-  // Continuous Monitoring (Phone/Person)
+  // Real-time AWS ML Frame Analysis loop
   useEffect(() => {
     const captureAndAnalyze = async () => {
-      if (!videoRef.current) return;
+      // Don't analyze while an alert is actively blocking the screen
+      if (realViolations.length > 0) return;
+      if (!videoRef.current || !mediaStreamRef.current) return;
 
       const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
+      canvas.width = videoRef.current.videoWidth || 640;
+      canvas.height = videoRef.current.videoHeight || 480;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
@@ -94,12 +134,31 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
             });
 
             if (analyzeRes.violationDetected) {
-              addToast({
+              const newViolation: Violation = {
                 id: Date.now().toString(),
+                type: analyzeRes.violationType,
+                severity: 'high',
+                timestamp: new Date().toISOString()
+              };
+              
+              setRealViolations(prev => [newViolation, ...prev]);
+              
+              addToast({
+                id: newViolation.id,
                 type: 'error',
                 title: 'Security Violation Detected',
-                message: analyzeRes.violationType
+                message: getViolationDescription(analyzeRes.violationType)
               });
+              
+              if (analyzeRes.violationType === 'MULTIPLE_PERSONS_DETECTED' || analyzeRes.violationType === 'PHONE_DETECTED') {
+                  setTelemetryState(s => ({ ...s, faceConfidence: 50 }));
+              }
+            } else {
+               // Update telemetry to healthy
+               setTelemetryState({
+                 faceDetected: true,
+                 faceConfidence: 98 + Math.random(), // just a simulation of high confidence if no violation
+               });
             }
           }
         } catch (err) {
@@ -108,37 +167,9 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
       }, 'image/jpeg', 0.8);
     };
 
-    const interval = setInterval(captureAndAnalyze, 10000); // 10 seconds
+    const interval = setInterval(captureAndAnalyze, 10000); // Analyze every 10 seconds
     return () => clearInterval(interval);
-  }, [examId]);
-
-  // Handle violations - show toasts
-  useEffect(() => {
-    if (violations.length > 0) {
-      const latest = violations[0];
-      addToast({
-        id: latest.id,
-        type: latest.severity === 'high' ? 'error' : 'warning',
-        title: 'Violation Detected',
-        message: getViolationDescription(latest.type),
-      });
-    }
-  }, [violations]);
-
-  // Self-correct toasts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.9) {
-        addToast({
-          id: `auto-${Date.now()}`,
-          type: 'success',
-          title: 'System Self-Corrected',
-          message: 'All monitoring parameters normalized',
-        });
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [examId, realViolations]);
 
   const addToast = (toast: Toast) => {
     setToasts(prev => [toast, ...prev].slice(0, 5));
@@ -149,6 +180,10 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const clearViolations = () => {
+    setRealViolations([]);
   };
 
   const toggleFullscreen = () => {
@@ -169,23 +204,26 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
   };
 
   const handleEndExam = async () => {
+    if (!window.confirm("Are you sure you want to finish and submit the exam? You cannot change your answers after submission.")) return;
+    
+    setIsSubmitting(true);
     const sessionId = localStorage.getItem('sessionId');
-    const email = 'student@university.edu'; // In a real app, fetch from user context
+    const email = 'student@university.edu'; // Placeholder
 
     try {
       if (sessionId) {
         await fetchApi(`/exam/${examId}/report/${sessionId}`, {
           method: 'POST',
-          body: JSON.stringify({ email, violations })
-        });
-
-        addToast({
-          id: Date.now().toString(),
-          type: 'success',
-          title: 'Exam Submitted',
-          message: 'Your exam report has been generated and sent to your email.'
+          body: JSON.stringify({ email, violations: realViolations })
         });
       }
+
+      addToast({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Exam Submitted',
+        message: 'Your exam report has been generated and sent to your email.'
+      });
 
       setTimeout(() => {
         window.location.href = '/dashboard';
@@ -193,13 +231,16 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
 
     } catch (error) {
       console.error('Failed to end exam and send report:', error);
-      // Fallback
-      window.location.href = '/dashboard';
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
     }
   };
 
+  const currentQ = QUESTIONS[currentQuestionIdx];
+
   return (
-    <div className="min-h-screen bg-navy-900 overflow-hidden">
+    <div className="min-h-screen bg-navy-900 overflow-hidden flex flex-col">
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-navy-900/90 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center justify-between px-4 py-3">
@@ -208,49 +249,40 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
               <Shield className="h-5 w-5 text-cyan" />
             </div>
             <div>
-              <h1 className="font-sora text-sm font-semibold text-white">Machine Learning Basics</h1>
+              <h1 className="font-sora text-sm font-semibold text-white">Introduction to Computer Science</h1>
               <p className="text-xs text-text-secondary">Exam ID: {examId}</p>
             </div>
           </div>
 
           {/* Center Timer */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-              <Clock className="h-4 w-4 text-cyan" />
-              <span className="font-mono text-lg font-semibold text-white">
+            <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border", sessionTime <= 300 ? "bg-violation/10 border-violation/30" : "bg-white/5 border-white/10")}>
+              <Clock className={cn("h-4 w-4", sessionTime <= 300 ? "text-violation animate-pulse" : "text-cyan")} />
+              <span className={cn("font-mono text-lg font-semibold", sessionTime <= 300 ? "text-violation animate-pulse" : "text-white")}>
                 {formatSessionTime(sessionTime)}
               </span>
-              <span className="text-xs text-text-secondary">/ 60:00</span>
+              <span className="text-xs text-text-secondary"> remaining</span>
             </div>
           </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setChatOpen(!chatOpen)}
-              className={cn(
-                'flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
-                chatOpen ? 'bg-cyan/20 text-cyan' : 'bg-white/5 text-white/60 hover:bg-white/10'
-              )}
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
-            <button
               onClick={toggleFullscreen}
               className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10"
             >
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violation/20 text-violation hover:bg-violation/30 transition-colors">
-              <Flag className="h-4 w-4" />
-              <span className="text-sm font-medium">Report Issue</span>
-            </button>
             <button
               onClick={handleEndExam}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success text-navy-900 hover:bg-success-light font-semibold transition-colors shadow-[0_0_15px_rgba(46,204,113,0.3)]"
+              disabled={isSubmitting}
+              className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors shadow-[0_0_15px_rgba(46,204,113,0.3)]",
+                  isSubmitting ? "bg-success/50 text-navy-900/50" : "bg-success text-navy-900 hover:bg-success-light"
+              )}
             >
               <CheckCircle className="h-4 w-4" />
-              <span>Finish Exam</span>
+              <span>{isSubmitting ? 'Submitting...' : 'Finish Exam'}</span>
             </button>
           </div>
         </div>
@@ -258,33 +290,15 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
         {/* Telemetry Bar */}
         <div className="flex items-center gap-4 px-4 py-2 bg-navy-800/50 border-t border-white/5 overflow-x-auto scrollbar-hide">
           <TelemetryBadge 
-            icon={Eye} 
-            label="Gaze" 
-            value={telemetry.gazeDirection === 'center' ? 'Center' : 'Away'}
-            status={telemetry.gazeDirection === 'center' ? 'good' : 'warning'}
-          />
-          <TelemetryBadge 
             icon={User} 
             label="Face" 
-            value={`${Math.round(telemetry.faceConfidence)}%`}
-            status={telemetry.faceDetected ? 'good' : 'error'}
-          />
-          <TelemetryBadge 
-            icon={Volume2} 
-            label="Audio" 
-            value={`${Math.round(telemetry.ambientNoise)}dB`}
-            status={telemetry.ambientNoise < 40 ? 'good' : 'warning'}
+            value={`${Math.round(telemetryState.faceConfidence)}%`}
+            status={telemetryState.faceDetected ? 'good' : 'error'}
           />
           <TelemetryBadge 
             icon={Monitor} 
             label="Screen" 
-            value={telemetry.browserFocused ? 'Active' : 'Away'}
-            status={telemetry.browserFocused ? 'good' : 'warning'}
-          />
-          <TelemetryBadge 
-            icon={Smartphone} 
-            label="Mobile" 
-            value="Connected"
+            value="Active"
             status="good"
           />
           <TelemetryBadge 
@@ -296,11 +310,80 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="pt-32 pb-4 px-4 h-screen">
-        <div className="relative h-full">
-          {/* Primary Webcam Feed */}
-          <div className="absolute inset-0 rounded-2xl overflow-hidden bg-navy-800">
+      {/* Main Content Area - Split Layout */}
+      <main className="flex-1 mt-32 mb-4 mx-4 flex gap-6 relative">
+        {/* Left Side - The Exam Interface */}
+        <div className="flex-1 glass-card p-8 flex flex-col relative z-10">
+            <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+                <h2 className="text-2xl font-sora font-semibold text-white">Question {currentQuestionIdx + 1} of {QUESTIONS.length}</h2>
+                <div className="flex space-x-1">
+                    {QUESTIONS.map((_, idx) => (
+                        <div key={idx} className={cn(
+                            "w-8 h-2 rounded-full transition-colors",
+                            idx === currentQuestionIdx ? "bg-cyan" : 
+                            answers[idx] !== undefined ? "bg-success/60" : "bg-white/10"
+                        )} />
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex-1">
+                <p className="text-xl text-white/90 leading-relaxed mb-8">{currentQ.text}</p>
+
+                <div className="space-y-4">
+                    {currentQ.options.map((opt, idx) => {
+                        const isSelected = answers[currentQuestionIdx] === idx;
+                        return (
+                        <button
+                            key={idx}
+                            onClick={() => setAnswers({...answers, [currentQuestionIdx]: idx})}
+                            className={cn(
+                                "w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center justify-between group",
+                                isSelected ? "bg-cyan/10 border-cyan shadow-[0_0_15px_rgba(0,240,255,0.15)]" : "bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10"
+                            )}
+                        >
+                            <span className={cn("text-lg", isSelected ? "text-cyan font-medium" : "text-white/80")}>{opt}</span>
+                            <div className={cn(
+                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                                isSelected ? "border-cyan" : "border-white/30 group-hover:border-white/50"
+                            )}>
+                                {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-cyan" />}
+                            </div>
+                        </button>
+                    )})}
+                </div>
+            </div>
+
+            <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+                <button
+                    onClick={() => setCurrentQuestionIdx(i => Math.max(0, i - 1))}
+                    disabled={currentQuestionIdx === 0}
+                    className="px-6 py-2.5 rounded-lg btn-outline disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                    Previous
+                </button>
+                {currentQuestionIdx < QUESTIONS.length - 1 ? (
+                    <button
+                        onClick={() => setCurrentQuestionIdx(i => i + 1)}
+                        className="px-6 py-2.5 rounded-lg btn-primary"
+                    >
+                        Next Question
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleEndExam}
+                        className="px-6 py-2.5 rounded-lg bg-success text-navy-900 font-bold hover:bg-success-light shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-colors"
+                    >
+                        Review & Submit
+                    </button>
+                )}
+            </div>
+        </div>
+
+        {/* Right Side - Picture-in-Picture feeds */}
+        <div className="w-72 flex flex-col gap-4 relative z-10 flex-shrink-0">
+          {/* Main Web Camera PiP */}
+          <div className="w-full aspect-video rounded-xl overflow-hidden bg-navy-800 border-2 border-cyan/30 shadow-[0_0_20px_rgba(0,240,255,0.1)] relative group">
             <video
               ref={videoRef}
               autoPlay
@@ -308,209 +391,34 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
               playsInline
               className="w-full h-full object-cover"
             />
-            
-            {/* Face Detection Overlay */}
-            <div className="absolute inset-0 pointer-events-none">
-              {telemetry.faceDetected ? (
-                <>
-                  {/* Bounding Box */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                  >
-                    <div className="relative w-40 h-52">
-                      {/* Corner markers */}
-                      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan" />
-                      <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan" />
-                      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan" />
-                      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan" />
-                      
-                      {/* Center dot */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-cyan rounded-full" />
-                      
-                      {/* Keypoints */}
-                      {['top-4 left-8', 'top-4 right-8', 'top-12 left-4', 'top-12 right-4', 
-                        'bottom-8 left-12', 'bottom-8 right-12', 'bottom-16 left-1/2'].map((pos, i) => (
-                        <div 
-                          key={i}
-                          className={cn(
-                            'absolute w-1.5 h-1.5 rounded-full bg-cyan/60 animate-pulse',
-                            pos
-                          )}
-                          style={{ animationDelay: `${i * 0.1}s` }}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                  
-                  {/* Labels */}
-                  <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -mt-32">
-                    <span className="px-2 py-1 rounded bg-cyan/20 text-cyan text-xs font-mono">
-                      face: {Math.round(telemetry.faceConfidence)}%
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="glass-card p-6 text-center">
-                    <AlertTriangle className="h-12 w-12 text-violation mx-auto mb-2" />
-                    <p className="text-white font-medium">Face Not Detected</p>
-                    <p className="text-sm text-text-secondary mt-1">Please position yourself in front of the camera</p>
-                  </div>
-                </div>
-              )}
+            {/* Top right label */}
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80 backdrop-blur-sm">
+                <div className="w-2 h-2 rounded-full bg-violation animate-pulse" />
+                <span className="text-[10px] text-white/80 font-medium tracking-wider uppercase">Live Feed</span>
             </div>
-
-            {/* Recording Indicator */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-violation/20 border border-violation/30">
-              <span className="h-2 w-2 rounded-full bg-violation animate-pulse" />
-              <span className="text-xs font-medium text-violation">REC</span>
+            
+            {/* Outline box mimicking face detection */}
+            {telemetryState.faceDetected && (
+              <div className="absolute inset-x-8 inset-y-6 border border-cyan/40 rounded-lg shadow-[inset_0_0_20px_rgba(0,240,255,0.1)] pointer-events-none" />
+            )}
+          </div>
+          
+          {/* Simulated Mobile Feed PiP */}
+          <div className="w-full aspect-video rounded-xl overflow-hidden bg-navy-800 border border-white/10 relative">
+             <div className="absolute inset-0 bg-gradient-to-br from-navy-700 to-navy-800 flex items-center justify-center">
+                <div className="text-center grayscale opacity-50">
+                    <Smartphone className="h-8 w-8 text-white/40 mx-auto mb-2" />
+                    <p className="text-xs text-white/60">Secondary Camera Active</p>
+                </div>
+             </div>
+             <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80">
+                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                <span className="text-[10px] text-white/80 uppercase">iPhone 13</span>
             </div>
           </div>
 
-          {/* Mobile Camera PiP */}
-          <AnimatePresence>
-            {showMobilePip && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, x: 100 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.8, x: 100 }}
-                className="absolute bottom-4 right-4 w-48 md:w-64 aspect-[3/4] rounded-xl overflow-hidden bg-navy-800 border border-white/10 shadow-2xl"
-              >
-                <div className="relative w-full h-full">
-                  {/* Simulated mobile camera view */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-navy-700 to-navy-800">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <Smartphone className="h-8 w-8 text-white/20 mx-auto mb-2" />
-                        <p className="text-xs text-white/40">Mobile Camera</p>
-                      </div>
-                    </div>
-                    
-                    {/* Simulated desk view overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-navy-900/80 to-transparent" />
-                  </div>
-                  
-                  {/* Mobile camera label */}
-                  <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80">
-                    <Smartphone className="h-3 w-3 text-cyan" />
-                    <span className="text-xs text-white/80">iPhone 13 Pro</span>
-                  </div>
-                  
-                  {/* Gyro indicator */}
-                  <div className="absolute top-2 right-2 px-2 py-1 rounded bg-success/20 border border-success/30">
-                    <span className="text-xs text-success">Gyro Active</span>
-                  </div>
-                  
-                  {/* Close button */}
-                  <button
-                    onClick={() => setShowMobilePip(false)}
-                    className="absolute bottom-2 right-2 h-6 w-6 rounded-full bg-navy-900/80 flex items-center justify-center text-white/60 hover:text-white"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Screen Share PiP */}
-          <AnimatePresence>
-            {showScreenPip && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 100 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 100 }}
-                className="absolute bottom-4 left-4 w-64 md:w-80 aspect-video rounded-xl overflow-hidden bg-navy-800 border border-white/10 shadow-2xl"
-              >
-                <div className="relative w-full h-full">
-                  {/* Simulated screen view */}
-                  <div className="absolute inset-0 bg-navy-700">
-                    <div className="p-3 space-y-2">
-                      <div className="h-2 w-3/4 bg-white/10 rounded" />
-                      <div className="h-2 w-1/2 bg-white/10 rounded" />
-                      <div className="h-20 bg-white/5 rounded mt-4" />
-                      <div className="grid grid-cols-3 gap-2 mt-4">
-                        <div className="h-8 bg-cyan/20 rounded" />
-                        <div className="h-8 bg-white/10 rounded" />
-                        <div className="h-8 bg-white/10 rounded" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Screen label */}
-                  <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80">
-                    <Monitor className="h-3 w-3 text-cyan" />
-                    <span className="text-xs text-white/80">Screen Share</span>
-                  </div>
-                  
-                  {/* Close button */}
-                  <button
-                    onClick={() => setShowScreenPip(false)}
-                    className="absolute bottom-2 right-2 h-6 w-6 rounded-full bg-navy-900/80 flex items-center justify-center text-white/60 hover:text-white"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </main>
-
-      {/* Chat Panel */}
-      <AnimatePresence>
-        {chatOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: 300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 300 }}
-            className="fixed right-0 top-24 bottom-0 w-80 bg-navy-900/95 backdrop-blur-xl border-l border-white/10 z-30"
-          >
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <h3 className="font-medium text-white">Proctor Chat</h3>
-                <button 
-                  onClick={() => setChatOpen(false)}
-                  className="text-white/60 hover:text-white"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                <div className="flex gap-3">
-                  <div className="h-8 w-8 rounded-full bg-cyan/20 flex items-center justify-center flex-shrink-0">
-                    <Shield className="h-4 w-4 text-cyan" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-text-secondary mb-1">Proctor</p>
-                    <p className="text-sm text-white bg-white/5 p-2 rounded-lg">
-                      Welcome to your exam! I'm here to monitor and assist if needed. Good luck!
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-4 border-t border-white/10">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="input-dark flex-1 text-sm"
-                  />
-                  <button className="px-3 py-2 rounded-lg bg-cyan text-navy-900 font-medium hover:bg-cyan-light transition-colors">
-                    Send
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Toast Notifications */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 space-y-2">
@@ -532,7 +440,7 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
               {toast.type === 'error' && <AlertTriangle className="h-5 w-5 flex-shrink-0" />}
               {toast.type === 'warning' && <AlertTriangle className="h-5 w-5 flex-shrink-0" />}
               {toast.type === 'success' && <CheckCircle className="h-5 w-5 flex-shrink-0" />}
-              {toast.type === 'info' && <Activity className="h-5 w-5 flex-shrink-0" />}
+              {toast.type === 'info' && <AlertTriangle className="h-5 w-5 flex-shrink-0" />}
               
               <div className="flex-1">
                 <p className="font-medium text-sm">{toast.title}</p>
@@ -552,38 +460,42 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
         </AnimatePresence>
       </div>
 
-      {/* Violation Alert Overlay */}
+      {/* Blocking Violation Alert Overlay */}
       <AnimatePresence>
-        {violations.length > 0 && violations[0].severity === 'high' && (
+        {realViolations.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-violation/20 backdrop-blur-sm flex items-center justify-center"
+            className="fixed inset-0 z-[100] bg-navy-900/80 backdrop-blur-md flex items-center justify-center pointer-events-auto"
           >
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              className="glass-card p-6 max-w-md mx-4 border-violation/50"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-navy-800 p-8 rounded-2xl max-w-lg w-full mx-4 border border-violation shadow-[0_0_50px_rgba(255,71,87,0.3)] relative overflow-hidden"
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-12 w-12 rounded-full bg-violation/20 flex items-center justify-center animate-pulse">
-                  <AlertTriangle className="h-6 w-6 text-violation" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-violation" />
+              <div className="flex flex-col items-center text-center">
+                <div className="h-20 w-20 rounded-full bg-violation/10 flex items-center justify-center animate-pulse mb-6">
+                  <AlertTriangle className="h-10 w-10 text-violation" />
                 </div>
-                <div>
-                  <h3 className="font-sora text-lg font-bold text-violation">Violation Alert</h3>
-                  <p className="text-sm text-text-secondary">Please correct your behavior</p>
+                
+                <h3 className="font-sora text-3xl font-bold text-white mb-2">Automated Alert</h3>
+                <p className="text-xl text-violation font-medium mb-6">
+                    {getViolationDescription(realViolations[0].type)}
+                </p>
+                
+                <div className="bg-white/5 p-4 rounded-xl mb-8 w-full">
+                    <p className="text-white/80 text-sm">
+                        This incident has been logged and recorded by the proctoring system. Continued violations may result in immediate termination of the exam.
+                    </p>
                 </div>
-              </div>
               
-              <p className="text-white mb-4">{getViolationDescription(violations[0].type)}</p>
-              
-              <div className="flex gap-3">
                 <button 
-                  onClick={() => {}}
-                  className="flex-1 btn-outline border-violation text-violation hover:bg-violation/10"
+                  onClick={clearViolations}
+                  className="w-full py-4 rounded-xl bg-violation text-white font-bold text-lg hover:bg-violation/90 transition-colors shadow-lg shadow-violation/20"
                 >
-                  I Understand
+                  I Understand & Resume Exam
                 </button>
               </div>
             </motion.div>

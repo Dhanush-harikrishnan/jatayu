@@ -14,36 +14,37 @@ export function formatDuration(minutes: number): string {
   return `${mins}m`;
 }
 
-export function formatTime(date: Date): string {
+export function formatTime(date: Date | string | number): string {
   return new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
-  }).format(date);
+  }).format(new Date(date));
 }
 
-export function formatDate(date: Date): string {
+export function formatDate(date: Date | string | number): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  }).format(date);
+  }).format(new Date(date));
 }
 
-export function formatDateTime(date: Date): string {
+export function formatDateTime(date: Date | string | number): string {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
-  }).format(date);
+  }).format(new Date(date));
 }
 
-export function getRelativeTime(date: Date): string {
+export function getRelativeTime(date: Date | string | number): string {
+  const dateObj = new Date(date);
   const now = new Date();
-  const diff = now.getTime() - date.getTime();
+  const diff = now.getTime() - dateObj.getTime();
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
@@ -53,7 +54,7 @@ export function getRelativeTime(date: Date): string {
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
-  return formatDate(date);
+  return formatDate(dateObj);
 }
 
 export function getStatusColor(status: string): string {

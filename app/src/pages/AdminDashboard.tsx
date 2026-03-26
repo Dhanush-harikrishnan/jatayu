@@ -8,114 +8,15 @@ import {
 import { cn, getRelativeTime } from '@/lib/utils';
 import type { StudentCard, Violation } from '@/types';
 import { ViolationModal } from '@/components/modals/ViolationModal';
+import { fetchApi } from '@/lib/api';
 
-// Mock student data
-const mockStudents: StudentCard[] = [
-  {
-    sessionId: 'sess-001',
-    studentId: 'STU-2024-001',
-    studentName: 'Alice Johnson',
-    studentAvatar: 'https://i.pravatar.cc/150?u=1',
-    examTitle: 'Machine Learning Basics',
-    status: 'online',
-    joinTime: new Date(Date.now() - 45 * 60000),
-    violationCount: 0,
-    lastActivity: new Date(),
-  },
-  {
-    sessionId: 'sess-002',
-    studentId: 'STU-2024-002',
-    studentName: 'Bob Smith',
-    studentAvatar: 'https://i.pravatar.cc/150?u=2',
-    examTitle: 'Machine Learning Basics',
-    status: 'violation',
-    joinTime: new Date(Date.now() - 30 * 60000),
-    violationCount: 2,
-    lastActivity: new Date(),
-  },
-  {
-    sessionId: 'sess-003',
-    studentId: 'STU-2024-003',
-    studentName: 'Carol White',
-    studentAvatar: 'https://i.pravatar.cc/150?u=3',
-    examTitle: 'Machine Learning Basics',
-    status: 'online',
-    joinTime: new Date(Date.now() - 50 * 60000),
-    violationCount: 0,
-    lastActivity: new Date(),
-  },
-  {
-    sessionId: 'sess-004',
-    studentId: 'STU-2024-004',
-    studentName: 'David Brown',
-    studentAvatar: 'https://i.pravatar.cc/150?u=4',
-    examTitle: 'Machine Learning Basics',
-    status: 'away',
-    joinTime: new Date(Date.now() - 20 * 60000),
-    violationCount: 1,
-    lastActivity: new Date(Date.now() - 5 * 60000),
-  },
-  {
-    sessionId: 'sess-005',
-    studentId: 'STU-2024-005',
-    studentName: 'Emma Davis',
-    studentAvatar: 'https://i.pravatar.cc/150?u=5',
-    examTitle: 'Machine Learning Basics',
-    status: 'online',
-    joinTime: new Date(Date.now() - 55 * 60000),
-    violationCount: 0,
-    lastActivity: new Date(),
-  },
-  {
-    sessionId: 'sess-006',
-    studentId: 'STU-2024-006',
-    studentName: 'Frank Miller',
-    studentAvatar: 'https://i.pravatar.cc/150?u=6',
-    examTitle: 'Machine Learning Basics',
-    status: 'offline',
-    joinTime: new Date(Date.now() - 60 * 60000),
-    violationCount: 0,
-    lastActivity: new Date(Date.now() - 15 * 60000),
-  },
-];
-
-// Mock violations for timeline
-const mockViolations: Violation[] = [
-  {
-    id: 'v-001',
-    sessionId: 'sess-002',
-    type: 'looking_away',
-    severity: 'medium',
-    timestamp: new Date(Date.now() - 5 * 60000),
-    description: 'Candidate looking away from screen',
-    anomalyScore: 75,
-    metadata: { confidence: 0.85 },
-  },
-  {
-    id: 'v-002',
-    sessionId: 'sess-002',
-    type: 'phone_detected',
-    severity: 'high',
-    timestamp: new Date(Date.now() - 2 * 60000),
-    description: 'Mobile phone detected in frame',
-    anomalyScore: 92,
-    metadata: { confidence: 0.94 },
-  },
-  {
-    id: 'v-003',
-    sessionId: 'sess-004',
-    type: 'face_not_detected',
-    severity: 'low',
-    timestamp: new Date(Date.now() - 8 * 60000),
-    description: 'Face not detected for 10 seconds',
-    anomalyScore: 45,
-    metadata: { confidence: 0.78 },
-  },
-];
+// Empty initial states
+const mockStudents: StudentCard[] = [];
+const mockViolations: Violation[] = [];
 
 export function AdminDashboard() {
   const [students, setStudents] = useState<StudentCard[]>(mockStudents);
-  const [violations] = useState<Violation[]>(mockViolations);
+  const [violations, setViolations] = useState<Violation[]>(mockViolations);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -123,14 +24,23 @@ export function AdminDashboard() {
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [notifications] = useState(3);
 
-  // Simulate real-time updates
+  // Poll real dashboard backend
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStudents(prev => prev.map(s => ({
-        ...s,
-        lastActivity: s.status === 'online' ? new Date() : s.lastActivity,
-      })));
-    }, 5000);
+    const fetchData = async () => {
+      try {
+        const [studentsRes, violationsRes] = await Promise.all([
+          fetchApi('/dashboard/admin/students'),
+          fetchApi('/dashboard/admin/violations')
+        ]);
+        if (studentsRes.success && studentsRes.data) setStudents(studentsRes.data);
+        if (violationsRes.success && violationsRes.data) setViolations(violationsRes.data);
+      } catch (e) {
+        console.error('Data fetch error:', e);
+      }
+    };
+    
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -202,7 +112,12 @@ export function AdminDashboard() {
               )}
             </button>
             <button 
-              onClick={() => window.location.href = '/admin/login'}
+              onClick={() => {
+                if (window.confirm("Are you sure you want to log out?")) {
+                  window.location.href = '/admin/login';
+                }
+              }}
+              title="Log Out"
               className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
             >
               <LogOut className="h-5 w-5" />

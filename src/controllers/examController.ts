@@ -44,7 +44,19 @@ export const analyzeFrame = async (req: Request, res: Response, next: NextFuncti
     if (hasPhone || multipleFaces) {
       const violationType = hasPhone ? 'PHONE_DETECTED' : 'MULTIPLE_PERSONS_DETECTED';
       const timestamp = new Date().toISOString();
-      await awsService.logViolationEvent(userSession.sessionId, timestamp, violationType, s3Key);
+      const metadata = {
+        confidence: facesRes.FaceDetails?.[0]?.Confidence ? facesRes.FaceDetails[0].Confidence / 100 : 0.9,
+        faceDetails: facesRes.FaceDetails?.map(f => ({
+          confidence: f.Confidence,
+          emotions: f.Emotions?.map(e => ({ type: e.Type, confidence: e.Confidence })) || [],
+          eyeGaze: { yaw: f.Pose?.Yaw, pitch: f.Pose?.Pitch },
+          sunglasses: { value: f.Sunglasses?.Value, confidence: f.Sunglasses?.Confidence },
+          eyeglasses: { value: f.Eyeglasses?.Value, confidence: f.Eyeglasses?.Confidence }
+        })) || [],
+        labels: labelsRes.Labels?.map(l => ({ name: l.Name, confidence: l.Confidence })) || [],
+        moderation: []
+      };
+      await awsService.logViolationEvent(userSession.sessionId, timestamp, violationType, s3Key, metadata);
 
       // Send SES email to admin
       const adminEmail = process.env.ADMIN_EMAIL || 'admin@institution.edu';
