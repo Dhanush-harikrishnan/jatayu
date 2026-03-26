@@ -38,14 +38,35 @@ export const analyzeFrame = async (req: Request, res: Response, next: NextFuncti
       awsService.detectFacesFromS3(s3Key)
     ]);
 
-    const hasPhone = labelsRes.Labels?.some(l => l.Name === 'Phone' || l.Name === 'Cell Phone' || l.Name === 'Mobile Phone');
+    const hasPhone = labelsRes.Labels?.some(l => 
+      ['Phone', 'Cell Phone', 'Mobile Phone', 'Electronics', 'Electronics Device'].includes(l.Name || '')
+    );
     const multipleFaces = (facesRes.FaceDetails?.length || 0) > 1;
+    const noFace = (facesRes.FaceDetails?.length || 0) === 0;
+    
+    // Head Pose tracking
+    let isLookingAway = false;
+    const primaryFace = facesRes.FaceDetails?.[0];
+    if (primaryFace && primaryFace.Pose) {
+      const yaw = Math.abs(primaryFace.Pose.Yaw || 0);
+      const pitch = Math.abs(primaryFace.Pose.Pitch || 0);
+      // Read threshold from config or default to 25 degrees
+      const threshold = parseFloat(process.env.FACIAL_ORIENTATION_THRESHOLD || '25');
+      if (yaw > threshold || pitch > threshold) {
+        isLookingAway = true;
+      }
+    }
 
-    if (hasPhone || multipleFaces) {
-      const violationType = hasPhone ? 'PHONE_DETECTED' : 'MULTIPLE_PERSONS_DETECTED';
+    if (hasPhone || multipleFaces || noFace || isLookingAway) {
+      let violationType = 'UNKNOWN';
+      if (hasPhone) violationType = 'PHONE_DETECTED';
+      else if (multipleFaces) violationType = 'MULTIPLE_PERSONS_DETECTED';
+      else if (noFace) violationType = 'FACE_NOT_DETECTED';
+      else if (isLookingAway) violationType = 'LOOKING_AWAY';
+
       const timestamp = new Date().toISOString();
       const metadata = {
-        confidence: facesRes.FaceDetails?.[0]?.Confidence ? facesRes.FaceDetails[0].Confidence / 100 : 0.9,
+        confidence: primaryFace?.Confidence ? primaryFace.Confidence / 100 : 0.9,
         faceDetails: facesRes.FaceDetails?.map(f => ({
           confidence: f.Confidence,
           emotions: f.Emotions?.map(e => ({ type: e.Type, confidence: e.Confidence })) || [],
@@ -56,6 +77,7 @@ export const analyzeFrame = async (req: Request, res: Response, next: NextFuncti
         labels: labelsRes.Labels?.map(l => ({ name: l.Name, confidence: l.Confidence })) || [],
         moderation: []
       };
+      
       await awsService.logViolationEvent(userSession.sessionId, timestamp, violationType, s3Key, metadata);
 
       // Send SES email to admin

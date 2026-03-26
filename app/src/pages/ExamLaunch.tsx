@@ -134,11 +134,12 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
           const res = await fetchApi(`/exam/${examId}/create-liveness-session`, { method: 'POST' });
           if (res.sessionId) {
             setLivenessSessionId(res.sessionId);
+          } else {
+            alert('Failed to initialize liveness session from AWS.');
           }
         } catch (error) {
           console.error('Liveness session creation failed:', error);
-          // In dev mode, we might just bypass this if AWS fails
-          setLivenessPassed(true);
+          alert('Liveness check is unavailable. Check AWS Rekognition permissions in the backend.');
         }
       };
       fetchLiveness();
@@ -151,12 +152,11 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       if (res.passed) {
         setLivenessPassed(true);
       } else {
-        alert('Liveness check failed! Confidence: ' + res.confidence);
+        alert('Liveness check failed! You must be a real person in front of the camera.');
       }
     } catch (error) {
       console.error('Failed to get liveness result', error);
-      // Fallback for demo
-      setLivenessPassed(true);
+      alert('Failed to analyze liveness results from AWS.');
     }
   };
 

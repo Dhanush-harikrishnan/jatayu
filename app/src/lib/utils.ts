@@ -78,8 +78,9 @@ export function getStatusColor(status: string): string {
 }
 
 export function getViolationIcon(type: string): string {
-  switch (type) {
+  switch (type.toLowerCase()) {
     case 'multiple_faces':
+    case 'multiple_persons_detected':
       return 'Users';
     case 'face_not_detected':
       return 'UserX';
@@ -107,8 +108,9 @@ export function getViolationIcon(type: string): string {
 }
 
 export function getViolationDescription(type: string): string {
-  switch (type) {
+  switch (type.toLowerCase()) {
     case 'multiple_faces':
+    case 'multiple_persons_detected':
       return 'Multiple faces detected in frame';
     case 'face_not_detected':
       return 'Face not visible to camera';
