@@ -1,0 +1,52 @@
+
+> secureguard-pro-backend@1.0.0 dev
+> nodemon --exec ts-node src/server.ts
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+/app/node_modules/ts-node/src/index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/services/pdfService.ts(40,26): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(text: string, x?: number | undefined, y?: number | undefined, options?: TextOptions | undefined): PDFDocument', gave the following error.
+    Argument of type '{ italic: boolean; }' is not assignable to parameter of type 'number'.
+  Overload 2 of 2, '(text: string, options?: TextOptions | undefined): PDFDocument', gave the following error.
+    Object literal may only specify known properties, and 'italic' does not exist in type 'TextOptions'.
+
+    at createTSError (/app/node_modules/ts-node/src/index.ts:859:12)
+    at reportTSError (/app/node_modules/ts-node/src/index.ts:863:19)
+    at getOutput (/app/node_modules/ts-node/src/index.ts:1077:36)
+    at Object.compile (/app/node_modules/ts-node/src/index.ts:1433:41)
+    at Module.m._compile (/app/node_modules/ts-node/src/index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1838:10
+    at Object.require.extensions.<computed> [as .ts] (/app/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  diagnosticCodes: [ 2769 ]
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32minfo[39m: Server is running in development mode on port 3000 {"service":"secureguard-pro","timestamp":"2026-03-26T03:57:38.416Z"}
+[31merror[39m: Database connection check failed: User: arn:aws:iam::143629080245:user/secureguard-pro-backend-hyd is not authorized to perform: dynamodb:ListTables on resource: arn:aws:dynamodb:ap-south-2:143629080245:table/* because no identity-based policy allows the dynamodb:ListTables action {"$fault":"client","$metadata":{"attempts":1,"httpStatusCode":400,"requestId":"SJP75CH430B2Q5A8348KGASUABVV4KQNSO5AEMVJF66Q9ASUAAJG","totalRetryDelay":0},"__type":"com.amazon.coral.service#AccessDeniedException","name":"AccessDeniedException","service":"secureguard-pro","stack":"AccessDeniedException: User: arn:aws:iam::143629080245:user/secureguard-pro-backend-hyd is not authorized to perform: dynamodb:ListTables on resource: arn:aws:dynamodb:ap-south-2:143629080245:table/* because no identity-based policy allows the dynamodb:ListTables action\n    at ProtocolLib.getErrorSchemaOrThrowBaseException (/app/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:72:67)\n    at AwsJson1_0Protocol.handleError (/app/node_modules/@aws-sdk/core/dist-cjs/submodules/protocols/index.js:784:65)\n    at AwsJson1_0Protocol.deserializeResponse (/app/node_modules/@smithy/core/dist-cjs/submodules/protocols/index.js:518:24)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async /app/node_modules/@smithy/core/dist-cjs/submodules/schema/index.js:27:24\n    at async /app/node_modules/@smithy/core/dist-cjs/index.js:120:20\n    at async /app/node_modules/@smithy/middleware-retry/dist-cjs/index.js:251:46\n    at async /app/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26\n    at async Object.checkDatabaseConnection (/app/src/services/awsService.ts:35:7)\n    at async /app/src/app.ts:29:27","timestamp":"2026-03-26T03:58:01.400Z"}
+[0mGET /health/db [31m503[0m 857.872 ms - 86[0m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32minfo[39m: Server is running in development mode on port 3000 {"service":"secureguard-pro","timestamp":"2026-03-26T03:58:08.238Z"}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32minfo[39m: Server is running in development mode on port 3000 {"service":"secureguard-pro","timestamp":"2026-03-26T03:58:23.705Z"}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32minfo[39m: Server is running in development mode on port 3000 {"service":"secureguard-pro","timestamp":"2026-03-26T03:58:38.296Z"}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32minfo[39m: Server is running in development mode on port 3000 {"service":"secureguard-pro","timestamp":"2026-03-26T03:58:44.652Z"}
+[0mPOST /auth/login [32m200[0m 9.990 ms - 378[0m
+[0mPOST /auth/login [32m200[0m 1.428 ms - 355[0m

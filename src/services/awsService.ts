@@ -155,12 +155,15 @@ export const awsService = {
   },
 
   logViolationEvent: async (sessionId: string, timestamp: string, violationType: string, s3Key: string) => {
+    // Convert timestamp ISO string or any string to a Number for DynamoDB if required by schema,
+    // Actually the schema seems to require N for EventTime.
+    const timestampNumber = Date.now().toString();
     const command = new PutItemCommand({
       TableName: config.aws.dynamoDbTableName,
       Item: {
         SessionId: { S: sessionId },
-        'EventTime#ViolationType': { S: `${timestamp}#${violationType}` },
-        EventTime: { S: timestamp },
+        'EventTime#ViolationType': { S: `${timestampNumber}#${violationType}` },
+        EventTime: { N: timestampNumber },
         ViolationType: { S: violationType },
         EvidenceKey: { S: s3Key },
       },

@@ -24,7 +24,7 @@ export function AdminLogin() {
       // For Admin, we still hit the same mock endpoint for demo
       const response = await fetchApi('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ userId: email, examId: 'ADMIN-PORTAL' }),
+        body: JSON.stringify({ userId: email, password, examId: 'ADMIN-PORTAL' }),
       });
 
       if (response.success && response.data?.token) {
