@@ -7,6 +7,8 @@ export interface TelemetryEvent {
   type: 'LAPTOP_FRAME' | 'MOBILE_FRAME' | 'KEYSTROKE' | 'TRANSCRIPT' | 'GYRO_MOTION';
   timestamp: number;
   data: any;
+  // Optional reference to an evidence image already stored in S3.
+  evidenceKey?: string;
 }
 
 export class CorrelationEngine {
@@ -14,16 +16,30 @@ export class CorrelationEngine {
   private events: TelemetryEvent[] = [];
   private sessionId: string;
   private windowMs = config.thresholds.correlationWindowMs;
+  private lastPrimaryEvidenceKey?: string;
+  private lastPrimaryMetadata?: any;
+  private context?: { userId?: string; studentName?: string; examId?: string };
 
-  private constructor(sessionId: string) {
+  private constructor(
+    sessionId: string,
+    context?: { userId?: string; studentName?: string; examId?: string }
+  ) {
     this.sessionId = sessionId;
+    this.context = context;
     // Periodically clean up old events
     setInterval(() => this.cleanOldEvents(), 1000);
   }
 
-  public static getInstance(sessionId: string): CorrelationEngine {
+  public static getInstance(
+    sessionId: string,
+    context?: { userId?: string; studentName?: string; examId?: string }
+  ): CorrelationEngine {
     if (!this.instances.has(sessionId)) {
-      this.instances.set(sessionId, new CorrelationEngine(sessionId));
+      this.instances.set(sessionId, new CorrelationEngine(sessionId, context));
+    } else if (context) {
+      // Update context if we learn it after first creation.
+      const existing = this.instances.get(sessionId)!;
+      existing.context = { ...(existing.context || {}), ...context };
     }
     return this.instances.get(sessionId)!;
   }
@@ -33,6 +49,17 @@ export class CorrelationEngine {
   }
 
   public addEvent(event: TelemetryEvent) {
+    if (event.type === 'LAPTOP_FRAME' && event.evidenceKey) {
+      this.lastPrimaryEvidenceKey = event.evidenceKey;
+    }
+    if (
+      event.type === 'LAPTOP_FRAME' &&
+      event.evidenceKey &&
+      (event.data?.rekognitionMetadata || event.data?.metadata)
+    ) {
+      // Store the latest Rekognition face analysis so that the violation can be rendered with real AWS proof data.
+      this.lastPrimaryMetadata = event.data.rekognitionMetadata || event.data.metadata;
+    }
     this.events.push(event);
     this.evaluateRules();
   }
@@ -54,7 +81,7 @@ export class CorrelationEngine {
     if (keystrokesInWindow.length > 0 && recentFrames.length > 0) {
       const facesCount = recentFrames[recentFrames.length - 1].data.faceCount;
       if (facesCount === 0) {
-        this.triggerCriticalViolation('OFF_SCREEN_TYPING');
+        this.triggerCriticalViolation('copy_paste_attempt');
       }
     }
 
@@ -69,7 +96,7 @@ export class CorrelationEngine {
       const hasSuspiciousText = suspiciousWords.some(w => text.includes(w));
       
       if (hasSuspiciousText) {
-        this.triggerCriticalViolation('SUSPECTED_TRANSCRIPTION');
+        this.triggerCriticalViolation('voice_detected');
       }
     }
 
@@ -77,22 +104,35 @@ export class CorrelationEngine {
     // High gyro deviation detected
     const gyroEvents = windowEvents.filter(e => e.type === 'GYRO_MOTION');
     if (gyroEvents.length > 0) {
-      this.triggerCriticalViolation('PHONE_MOVEMENT_DETECTED');
+      this.triggerCriticalViolation('gyro_movement');
     }
   }
 
   private async triggerCriticalViolation(violationType: string) {
     logger.warn(`[Violation] ${violationType} in session ${this.sessionId}`);
 
-    // In a real app, you would snapshot the last base64 frame from state. 
-    // Here we use a dummy s3Key logic for architecture adherence.
     const isoTimestamp = new Date().toISOString();
-    const fakeS3Key = `evidence/${this.sessionId}/${isoTimestamp}.jpg`;
+    const s3Key = this.lastPrimaryEvidenceKey;
+
+    if (!s3Key) {
+      logger.warn(
+        `[Violation] Evidence missing for ${violationType} in session ${this.sessionId}. ` +
+          `Make sure websocket primary frames upload evidence to S3.`
+      );
+      return;
+    }
     
     try {
-        await awsService.logViolationEvent(this.sessionId, isoTimestamp, violationType, fakeS3Key);
+      await awsService.logViolationEvent(
+        this.sessionId,
+        isoTimestamp,
+        violationType,
+        s3Key,
+        this.lastPrimaryMetadata,
+        this.context
+      );
     } catch (e) {
-        logger.error('DynamoDB Logging failed:', e);
+      logger.error('DynamoDB Logging failed:', e);
     }
 
     // Emit to admin room
@@ -101,7 +141,7 @@ export class CorrelationEngine {
         sessionId: this.sessionId,
         violationType,
         timestamp: isoTimestamp,
-        s3Key: fakeS3Key
+        s3Key
       });
     }
 

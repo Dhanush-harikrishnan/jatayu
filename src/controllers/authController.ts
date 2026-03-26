@@ -26,9 +26,18 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // Generate a unique session ID for this exam attempt (or admin session)
     const sessionId = uuidv4();
+    const normalizeRole = (role: any) => {
+      // DynamoDB user roles are `admin` and `student`.
+      // Backend route authorization expects `admin` and `primary`.
+      if (role === 'student') return 'primary';
+      if (role === 'admin') return 'admin';
+      if (role === 'primary' || role === 'secondary_camera') return role;
+      return role;
+    };
+
     const tokenPayload: any = { 
       userId: user.email, 
-      role: user.role, 
+      role: normalizeRole(user.role), 
       name: user.name, 
       sessionId 
     };
@@ -63,7 +72,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       data: {
         token,
         sessionId,
-        role: user.role,
+        role: normalizeRole(user.role),
         name: user.name
       },
     });
@@ -90,9 +99,16 @@ export const verify2FA = async (req: Request, res: Response, next: NextFunction)
     await awsService.clearUserOTP(email);
 
     const sessionId = uuidv4();
+    const normalizeRole = (role: any) => {
+      if (role === 'student') return 'primary';
+      if (role === 'admin') return 'admin';
+      if (role === 'primary' || role === 'secondary_camera') return role;
+      return role;
+    };
+
     const tokenPayload: any = { 
       userId: user.email, 
-      role: user.role, 
+      role: normalizeRole(user.role), 
       name: user.name, 
       sessionId 
     };
@@ -103,7 +119,7 @@ export const verify2FA = async (req: Request, res: Response, next: NextFunction)
       data: {
         token,
         sessionId,
-        role: user.role,
+        role: normalizeRole(user.role),
         name: user.name
       }
     });

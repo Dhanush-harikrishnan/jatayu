@@ -1,7 +1,7 @@
 import { RekognitionClient, DetectFacesCommand, DetectLabelsCommand, CreateFaceLivenessSessionCommand, GetFaceLivenessSessionResultsCommand } from '@aws-sdk/client-rekognition';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { DynamoDBClient, PutItemCommand, ListTablesCommand, GetItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, PutItemCommand, ListTablesCommand, GetItemCommand, UpdateItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { SESClient, SendEmailCommand, SendRawEmailCommand } from '@aws-sdk/client-ses';
 import { config } from '../config/env';
 import { logger } from '../logger';
@@ -97,6 +97,39 @@ export const awsService = {
     return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
   },
 
+  // Used by the admin dashboard to render "live proofs" from S3 without making the bucket public.
+  generateGetPresignedUrl: async (s3Key: string, expiresInSeconds: number = 3600): Promise<string> => {
+    const command = new GetObjectCommand({
+      Bucket: config.aws.s3Bucket,
+      Key: s3Key,
+    });
+    return await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+  },
+
+  getEvidenceObjectBytes: async (s3Key: string): Promise<Buffer> => {
+    const command = new GetObjectCommand({
+      Bucket: config.aws.s3Bucket,
+      Key: s3Key,
+    });
+    const response = await s3Client.send(command);
+    if (!response.Body) {
+      throw new Error(`No S3 object body for key: ${s3Key}`);
+    }
+
+    const body = response.Body as any;
+    if (typeof body.transformToByteArray === 'function') {
+      const bytes = await body.transformToByteArray();
+      return Buffer.from(bytes);
+    }
+
+    // Fallback for stream-like bodies.
+    const chunks: Buffer[] = [];
+    for await (const chunk of body) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  },
+
   detectLabelsFromS3: async (s3Key: string) => {
     const command = new DetectLabelsCommand({
       Image: {
@@ -106,7 +139,7 @@ export const awsService = {
         },
       },
       MaxLabels: 10,
-      MinConfidence: 80,
+      MinConfidence: config.thresholds.rekognitionConfidence,
     });
     return await rekognitionClient.send(command);
   },
@@ -176,7 +209,14 @@ export const awsService = {
     }
   },
 
-  logViolationEvent: async (sessionId: string, timestamp: string, violationType: string, s3Key: string, metadata?: any) => {
+  logViolationEvent: async (
+    sessionId: string,
+    timestamp: string,
+    violationType: string,
+    s3Key: string,
+    metadata?: any,
+    context?: { userId?: string; studentName?: string; examId?: string }
+  ) => {
     const item: any = {
       SessionId: { S: sessionId },
       'EventTime#ViolationType': { S: `${timestamp}#${violationType}` },
@@ -187,11 +227,44 @@ export const awsService = {
     if (metadata) {
       item.Metadata = { S: JSON.stringify(metadata) };
     }
+    if (context?.userId) item.UserId = { S: context.userId };
+    if (context?.studentName) item.StudentName = { S: context.studentName };
+    if (context?.examId) item.ExamId = { S: context.examId };
+
     const command = new PutItemCommand({
       TableName: config.aws.dynamoDbTableName,
       Item: item,
     });
     return dynamoClient.send(command);
+  },
+
+  getViolationsBySessionId: async (sessionId: string, limit: number = 200) => {
+    const command = new QueryCommand({
+      TableName: config.aws.dynamoDbTableName,
+      KeyConditionExpression: '#sid = :sid',
+      ExpressionAttributeNames: { '#sid': 'SessionId' },
+      ExpressionAttributeValues: { ':sid': { S: sessionId } },
+      ScanIndexForward: false,
+      Limit: limit,
+    });
+
+    const result = await dynamoClient.send(command);
+    return (result.Items || []).map((item: any) => {
+      let parsedMetadata: any = undefined;
+      try {
+        parsedMetadata = item.Metadata?.S ? JSON.parse(item.Metadata.S) : undefined;
+      } catch {
+        parsedMetadata = undefined;
+      }
+
+      return {
+        sessionId: item.SessionId?.S,
+        timestamp: item.EventTime?.S,
+        violationType: item.ViolationType?.S,
+        evidenceKey: item.EvidenceKey?.S,
+        metadata: parsedMetadata,
+      };
+    });
   },
 
   sendMagicLinkEmail: async (toEmail: string, link: string) => {

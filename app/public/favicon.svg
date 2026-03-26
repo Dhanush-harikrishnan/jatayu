@@ -1,0 +1,11 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SecureGuard">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#13d6e8"/>
+      <stop offset="100%" stop-color="#0aa6d8"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#041739"/>
+  <path d="M32 12l16 6v13c0 11.2-6.7 17.8-16 21-9.3-3.2-16-9.8-16-21V18l16-6z" fill="url(#g)"/>
+  <path d="M32 18l10 4v9c0 7.3-4.1 11.7-10 14.1-5.9-2.4-10-6.8-10-14.1v-9l10-4z" fill="#06224f"/>
+</svg>

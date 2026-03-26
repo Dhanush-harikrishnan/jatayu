@@ -48,7 +48,12 @@ export const initializeSocketServer = (server: HttpServer) => {
     // Initialize CorrelationEngine for this session if it doesn't exist
     // In cluster mode with Redis adapter, you would need distributed state.
     // Assuming local instance for MVP per PM2 clustering requirements without Redis explicitly requested.
-    const engine = CorrelationEngine.getInstance(sessionId);
+    const tokenUser: any = socket.data.user;
+    const engine = CorrelationEngine.getInstance(sessionId, {
+      userId: tokenUser.userId,
+      studentName: tokenUser.name,
+      examId: tokenUser.examId,
+    });
 
     registerWebRTCHandlers(io, socket, roomName);
     registerTelemetryHandlers(io, socket, roomName, engine);

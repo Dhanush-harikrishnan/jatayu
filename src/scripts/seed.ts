@@ -12,6 +12,7 @@ const dynamoClient = new DynamoDBClient({
 
 async function main() {
   const tableName = 'SecureGuardUsers';
+  const eventsTableName = config.aws.dynamoDbTableName || 'ProctoringEvents';
 
   try {
     console.log(`Checking if table ${tableName} exists...`);
@@ -34,6 +35,33 @@ async function main() {
     } catch (e: any) {
       if (e.name === 'ResourceInUseException') {
         console.log(`Table ${tableName} already exists.`);
+      } else {
+        throw e;
+      }
+    }
+
+    // Proctoring events table (violations + evidence pointers)
+    console.log(`Checking if table ${eventsTableName} exists...`);
+    const createEventsCmd = new CreateTableCommand({
+      TableName: eventsTableName,
+      AttributeDefinitions: [
+        { AttributeName: 'SessionId', AttributeType: 'S' },
+        { AttributeName: 'EventTime#ViolationType', AttributeType: 'S' },
+      ],
+      KeySchema: [
+        { AttributeName: 'SessionId', KeyType: 'HASH' },
+        { AttributeName: 'EventTime#ViolationType', KeyType: 'RANGE' },
+      ],
+      BillingMode: 'PAY_PER_REQUEST',
+    });
+
+    try {
+      await dynamoClient.send(createEventsCmd);
+      console.log(`Table ${eventsTableName} creation initiated. Waiting 10 seconds for it to become ACTIVE...`);
+      await new Promise(resolve => setTimeout(resolve, 10000));
+    } catch (e: any) {
+      if (e.name === 'ResourceInUseException') {
+        console.log(`Table ${eventsTableName} already exists.`);
       } else {
         throw e;
       }

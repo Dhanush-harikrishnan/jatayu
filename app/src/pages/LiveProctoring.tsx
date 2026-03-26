@@ -24,6 +24,7 @@ interface Violation {
   type: string;
   severity: 'low' | 'medium' | 'high';
   timestamp: string;
+  evidenceKey: string;
 }
 
 const QUESTIONS = [
@@ -53,10 +54,15 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const noFaceStrikeRef = useRef(0);
+  const allowNavigationRef = useRef(false);
 
   // Session timer & navigation protection
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowNavigationRef.current) {
+        return;
+      }
       e.preventDefault();
       e.returnValue = 'Are you sure you want to leave the active exam? Your progress may be lost and a violation may be recorded.';
     };
@@ -98,6 +104,7 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
       // Don't analyze while an alert is actively blocking the screen
       if (realViolations.length > 0) return;
       if (!videoRef.current || !mediaStreamRef.current) return;
+      if (videoRef.current.readyState < 2) return;
 
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth || 640;
@@ -107,59 +114,64 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
 
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-
+      canvas.toBlob(async () => {
         try {
-          // 1. Get presigned URL
-          const presignedRes = await fetchApi(`/exam/${examId}/presigned-url`, {
+          const imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          const analyzeRes = await fetchApi(`/exam/${examId}/analyze-live-frame`, {
             method: 'POST',
-            body: JSON.stringify({ filename: 'frame.jpg' })
+            body: JSON.stringify({ imageBase64 })
           });
 
-          if (presignedRes.success && presignedRes.url) {
-            // 2. Upload to S3
-            await fetch(presignedRes.url, {
-              method: 'PUT',
-              body: blob,
-              headers: {
-                'Content-Type': 'image/jpeg'
-              }
-            });
-
-            // 3. Request Analysis
-            const analyzeRes = await fetchApi(`/exam/${examId}/analyze-frame`, {
-              method: 'POST',
-              body: JSON.stringify({ s3Key: presignedRes.s3Key })
-            });
-
-            if (analyzeRes.violationDetected) {
-              const newViolation: Violation = {
-                id: Date.now().toString(),
-                type: analyzeRes.violationType,
-                severity: 'high',
-                timestamp: new Date().toISOString()
-              };
-              
-              setRealViolations(prev => [newViolation, ...prev]);
-              
-              addToast({
-                id: newViolation.id,
-                type: 'error',
-                title: 'Security Violation Detected',
-                message: getViolationDescription(analyzeRes.violationType)
-              });
-              
-              if (analyzeRes.violationType === 'MULTIPLE_PERSONS_DETECTED' || analyzeRes.violationType === 'PHONE_DETECTED') {
-                  setTelemetryState(s => ({ ...s, faceConfidence: 50 }));
+          if (analyzeRes.violationDetected) {
+            if (analyzeRes.violationType === 'face_not_detected') {
+              noFaceStrikeRef.current += 1;
+              if (noFaceStrikeRef.current < 2) {
+                // Ignore one transient miss to reduce false positives while user is in frame.
+                setTelemetryState(s => ({ ...s, faceDetected: true, faceConfidence: 75 }));
+                return;
               }
             } else {
-               // Update telemetry to healthy
-               setTelemetryState({
-                 faceDetected: true,
-                 faceConfidence: 98 + Math.random(), // just a simulation of high confidence if no violation
-               });
+              noFaceStrikeRef.current = 0;
             }
+
+            const newViolation: Violation = {
+              id: Date.now().toString(),
+              type: analyzeRes.violationType,
+              severity:
+                analyzeRes.violationType === 'phone_detected' ||
+                analyzeRes.violationType === 'multiple_faces'
+                  ? 'high'
+                  : 'medium',
+              timestamp: new Date().toISOString(),
+              evidenceKey: analyzeRes.s3Key
+            };
+
+            setRealViolations(prev => [newViolation, ...prev]);
+
+            addToast({
+              id: newViolation.id,
+              type: 'error',
+              title: 'Security Violation Detected',
+              message: getViolationDescription(analyzeRes.violationType)
+            });
+
+            if (analyzeRes.violationType === 'face_not_detected') {
+              setTelemetryState({ faceDetected: false, faceConfidence: 0 });
+            } else if (
+              analyzeRes.violationType === 'multiple_faces' ||
+              analyzeRes.violationType === 'phone_detected'
+            ) {
+              setTelemetryState(s => ({ ...s, faceDetected: true, faceConfidence: 50 }));
+            } else if (analyzeRes.violationType === 'looking_away') {
+              setTelemetryState(s => ({ ...s, faceDetected: true, faceConfidence: 70 }));
+            }
+          } else {
+            noFaceStrikeRef.current = 0;
+            // Update telemetry to healthy
+            setTelemetryState({
+              faceDetected: true,
+              faceConfidence: 98 + Math.random(), // just a simulation of high confidence if no violation
+            });
           }
         } catch (err) {
           console.error('Frame analysis failed:', err);
@@ -212,9 +224,14 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
 
     try {
       if (sessionId) {
+        const violationsForPdf = realViolations.map(v => ({
+          type: v.type,
+          timestamp: v.timestamp,
+          evidence: v.evidenceKey,
+        }));
         await fetchApi(`/exam/${examId}/report/${sessionId}`, {
           method: 'POST',
-          body: JSON.stringify({ email, violations: realViolations })
+          body: JSON.stringify({ email, violations: violationsForPdf })
         });
       }
 
@@ -226,12 +243,14 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
       });
 
       setTimeout(() => {
+        allowNavigationRef.current = true;
         window.location.href = '/dashboard';
       }, 2000);
 
     } catch (error) {
       console.error('Failed to end exam and send report:', error);
       setTimeout(() => {
+        allowNavigationRef.current = true;
         window.location.href = '/dashboard';
       }, 1000);
     }

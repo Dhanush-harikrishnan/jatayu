@@ -35,8 +35,16 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   const [countdown, setCountdown] = useState(5);
   const [livenessSessionId, setLivenessSessionId] = useState<string | null>(null);
   const [livenessPassed, setLivenessPassed] = useState<boolean>(false);
+  const [livenessError, setLivenessError] = useState<string | null>(null);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const setupCheckInFlightRef = useRef(false);
+  const allowNavigationRef = useRef(false);
+
+  // Setup step face indicator should reflect real detection (not assume success).
+  const [setupFaceCheck, setSetupFaceCheck] = useState<
+    'idle' | 'checking' | 'detected' | 'not_detected' | 'unavailable'
+  >('idle');
 
   // Generate pairing code on mount
   useEffect(() => {
@@ -65,6 +73,9 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   // Prevent accidental navigation
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowNavigationRef.current) {
+        return;
+      }
       e.preventDefault();
       e.returnValue = 'Are you sure you want to leave the exam setup?';
     };
@@ -78,10 +89,10 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       // Attempt backend pairing
       const pairDevice = async () => {
         try {
-          // Sending an email to a mock address to trigger backend API.
+          // For local/dev we generate a pairing token without requiring SES permission.
           await fetchApi(`/exam/${examId}/pair`, {
             method: 'POST',
-            body: JSON.stringify({ email: 'student@university.edu' }),
+            body: JSON.stringify({ email: 'student@university.edu', sendEmail: false }),
           });
         } catch (err) {
           console.error("Pairing API error:", err);
@@ -115,6 +126,81 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     }
   }, [videoRef.current, mediaStream, currentStep]);
 
+  // Poll face detection in setup so status updates as user moves in/out of frame.
+  useEffect(() => {
+    if (currentStep !== 2) return;
+    if (cameraPermission !== true) return;
+
+    let cancelled = false;
+
+    const checkFaceStatus = async () => {
+      if (setupCheckInFlightRef.current) return;
+      setupCheckInFlightRef.current = true;
+      try {
+        const video = videoRef.current;
+        if (!video) return;
+
+        if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+
+        const canvas = document.createElement('canvas');
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.drawImage(video, 0, 0, width, height);
+
+        const imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        setSetupFaceCheck(prev => (prev === 'idle' ? 'checking' : prev));
+
+        // Send frame bytes to backend; backend uploads/analyzes (avoids browser S3 CORS).
+        const analyzeRes = await fetchApi(`/exam/${examId}/analyze-setup-frame`, {
+          method: 'POST',
+          body: JSON.stringify({ imageBase64 })
+        });
+
+        if (cancelled) return;
+
+        if (analyzeRes?.faceDetected === false || analyzeRes?.faceCount === 0) {
+          setSetupFaceCheck('not_detected');
+          return;
+        }
+
+        const violationType = analyzeRes?.violationType as string | undefined;
+        if (analyzeRes?.violationDetected && violationType === 'face_not_detected') {
+          setSetupFaceCheck('not_detected');
+        } else {
+          setSetupFaceCheck('detected');
+        }
+      } catch (e) {
+        if (cancelled) return;
+        console.error('Setup face detection failed:', e);
+        setSetupFaceCheck('unavailable');
+      } finally {
+        setupCheckInFlightRef.current = false;
+      }
+    };
+
+    checkFaceStatus();
+    const interval = setInterval(checkFaceStatus, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      setupCheckInFlightRef.current = false;
+    };
+  }, [currentStep, cameraPermission, examId]);
+
+  useEffect(() => {
+    // Reset overlay state when leaving setup preview.
+    if (currentStep !== 2) setSetupFaceCheck('idle');
+  }, [currentStep]);
+
   const requestScreenShare = async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -134,12 +220,15 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
           const res = await fetchApi(`/exam/${examId}/create-liveness-session`, { method: 'POST' });
           if (res.sessionId) {
             setLivenessSessionId(res.sessionId);
+            setLivenessError(null);
           } else {
             alert('Failed to initialize liveness session from AWS.');
           }
         } catch (error) {
           console.error('Liveness session creation failed:', error);
-          alert('Liveness check is unavailable. Check AWS Rekognition permissions in the backend.');
+          const message =
+            error instanceof Error ? error.message : 'Unknown error';
+          alert(`Liveness check is unavailable. ${message}`);
         }
       };
       fetchLiveness();
@@ -167,9 +256,15 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       return () => clearTimeout(timer);
     }
     if (currentStep === 4 && countdown === 0) {
+      allowNavigationRef.current = true;
       window.location.href = `/exam/${examId}/proctor`;
     }
   }, [currentStep, countdown, examId]);
+
+  const navigateSafely = (url: string) => {
+    allowNavigationRef.current = true;
+    window.location.href = url;
+  };
 
   const handleNextStep = () => {
     if (currentStep < STEPS.length - 1) {
@@ -198,12 +293,13 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       <header className="sticky top-0 z-50 border-b border-white/5 bg-navy-900/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 py-4 lg:px-8">
           <div className="flex items-center gap-4">
-            <a 
-              href="/dashboard"
+            <button
+              type="button"
+              onClick={() => navigateSafely('/dashboard')}
               className="flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:bg-white/5 hover:text-white transition-colors"
             >
               <ChevronLeft className="h-6 w-6" />
-            </a>
+            </button>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
                 <Shield className="h-6 w-6 text-cyan" />
@@ -524,8 +620,22 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                             <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-cyan" />
                           </div>
                           <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-navy-900/80 px-3 py-1 rounded-full">
-                            <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                            <span className="text-xs text-white">Face detected</span>
+                            <span
+                              className={[
+                                'h-2 w-2 rounded-full',
+                                setupFaceCheck === 'checking' && 'bg-cyan animate-pulse',
+                                setupFaceCheck === 'detected' && 'bg-success animate-pulse',
+                                setupFaceCheck === 'not_detected' && 'bg-violation',
+                                setupFaceCheck === 'unavailable' && 'bg-warning'
+                              ].filter(Boolean).join(' ')}
+                            />
+                            <span className="text-xs text-white">
+                              {setupFaceCheck === 'checking' && 'Checking face...'}
+                              {setupFaceCheck === 'detected' && 'Face detected'}
+                              {setupFaceCheck === 'not_detected' && 'No face detected'}
+                              {setupFaceCheck === 'unavailable' && 'Face detection unavailable'}
+                              {setupFaceCheck === 'idle' && 'Face detection...'}
+                            </span>
                           </div>
                         </div>
                       )}
@@ -608,6 +718,11 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                         sessionId={livenessSessionId}
                         region="ap-south-1"
                         onAnalysisComplete={handleLivenessAnalysisComplete}
+                        onError={(e) => {
+                          const msg = (e as any)?.message || 'Face liveness stream failed';
+                          console.error('Liveness detector error:', e);
+                          setLivenessError(msg);
+                        }}
                         disableStartScreen={true}
                       />
                     </ThemeProvider>
@@ -620,6 +735,21 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     <div className="flex flex-col items-center justify-center p-8">
                       <div className="h-12 w-12 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
                       <p className="mt-4 text-navy-900">Loading liveness session...</p>
+                    </div>
+                  )}
+
+                  {!livenessPassed && livenessError && (
+                    <div className="mt-4 rounded-lg border border-violation/30 bg-violation/10 p-3 text-navy-900 w-full max-w-xl">
+                      <p className="text-sm font-medium">Liveness error: {livenessError}</p>
+                      <p className="text-xs mt-1">If this is local testing, use the dev bypass below.</p>
+                      {(import.meta.env.DEV || import.meta.env.VITE_ALLOW_LIVENESS_BYPASS === 'true') && (
+                        <button
+                          onClick={() => setLivenessPassed(true)}
+                          className="mt-2 px-3 py-1.5 rounded bg-cyan text-navy-900 text-sm font-semibold"
+                        >
+                          Dev Bypass Liveness
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

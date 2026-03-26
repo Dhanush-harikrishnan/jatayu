@@ -353,7 +353,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                               <div className="flex items-center justify-between">
                                 <h4 className="font-medium text-white">{violation.description}</h4>
                                 <span className="text-xs text-text-secondary">
-                                  {violation.timestamp.toLocaleTimeString()}
+                                  {new Date(violation.timestamp).toLocaleTimeString()}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 mt-2">
@@ -387,10 +387,10 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           <span className="text-sm font-medium text-white">Snapshot at Violation</span>
                         </div>
                         <div className="aspect-video bg-navy-800 flex items-center justify-center relative">
-                          {student.studentAvatar ? (
+                          {selectedViolation.snapshotUrl ? (
                             <img
-                              src={student.studentAvatar}
-                              alt="Violation snapshot"
+                              src={selectedViolation.snapshotUrl}
+                              alt="Violation proof snapshot"
                               className="w-full h-full object-cover opacity-80"
                             />
                           ) : (
@@ -398,7 +398,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           )}
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="px-3 py-1.5 rounded bg-violation/80 text-white text-xs font-medium">
-                              {selectedViolation.timestamp.toLocaleTimeString()}
+                              {new Date(selectedViolation.timestamp).toLocaleTimeString()}
                             </div>
                           </div>
                         </div>
@@ -410,7 +410,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           <DetailRow label="Type" value={selectedViolation.type} />
                           <DetailRow label="Description" value={selectedViolation.description} />
                           <DetailRow label="Severity" value={selectedViolation.severity} />
-                          <DetailRow label="Timestamp" value={selectedViolation.timestamp.toLocaleString()} />
+                          <DetailRow label="Timestamp" value={new Date(selectedViolation.timestamp).toLocaleString()} />
                           <DetailRow label="Anomaly Score" value={`${selectedViolation.anomalyScore}/100`} />
                           <DetailRow 
                             label="Confidence" 
