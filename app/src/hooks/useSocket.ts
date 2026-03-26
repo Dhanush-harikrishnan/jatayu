@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { WebSocketMessage, SocketState } from '@/types';
 
-const WS_URL = 'wss://api.secureguard.pro';
+// Use the VITE_API_URL if defined, and replace http:// with ws://, or fallback to localhost
+const getWsUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  return apiUrl.replace('http://', 'ws://').replace('https://', 'wss://');
+};
+
+const WS_URL = getWsUrl();
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const HEARTBEAT_INTERVAL = 30000;
