@@ -3,6 +3,7 @@ import { generateToken } from '../utils/jwt';
 import { v4 as uuidv4 } from 'uuid';
 import { awsService } from '../services/awsService';
 import bcrypt from 'bcryptjs';
+import { sessionRegistry } from '../services/sessionRegistry';
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -66,6 +67,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     const token = generateToken(tokenPayload, '4h');
+
+    if (tokenPayload.role === 'primary') {
+      sessionRegistry.upsert({
+        sessionId,
+        studentId: user.email || sessionId,
+        studentName: user.name || user.email || sessionId,
+        examId: examId || 'EXAM-101',
+        status: 'online',
+      });
+    }
 
     res.json({
       success: true,

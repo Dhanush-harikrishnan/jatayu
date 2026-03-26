@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Shield, Search, Grid3X3, LayoutList, 
   AlertTriangle, Users, Activity, Clock, LogOut,
-  Video, MoreVertical, Download, Bell
+  Video, MoreVertical, Download, Bell, Mail, CalendarDays, ToggleLeft, ToggleRight, SendHorizontal
 } from 'lucide-react';
 import { cn, getRelativeTime } from '@/lib/utils';
 import type { StudentCard, Violation } from '@/types';
@@ -14,9 +14,25 @@ import { fetchApi } from '@/lib/api';
 const mockStudents: StudentCard[] = [];
 const mockViolations: Violation[] = [];
 
+interface AdminExamConfig {
+  id: string;
+  title: string;
+  status: 'upcoming' | 'active' | 'completed';
+  startTime: string;
+  duration: number;
+  enabled: boolean;
+  requireFullscreen: boolean;
+}
+
 export function AdminDashboard() {
   const [students, setStudents] = useState<StudentCard[]>(mockStudents);
   const [violations, setViolations] = useState<Violation[]>(mockViolations);
+  const [examConfigs, setExamConfigs] = useState<AdminExamConfig[]>([]);
+  const [selectedExamId, setSelectedExamId] = useState('');
+  const [savingExam, setSavingExam] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [adminActionMessage, setAdminActionMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -28,13 +44,26 @@ export function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [studentsRes, violationsRes] = await Promise.all([
+        const [studentsRes, violationsRes, examsRes] = await Promise.all([
           fetchApi('/dashboard/admin/students'),
-          fetchApi('/dashboard/admin/violations')
+          fetchApi('/dashboard/admin/violations'),
+          fetchApi('/dashboard/admin/exams')
         ]);
         if (studentsRes.success && studentsRes.data) setStudents(studentsRes.data);
         if (violationsRes.success && violationsRes.data) setViolations(violationsRes.data);
+        if (examsRes.success && examsRes.data) {
+          setExamConfigs(examsRes.data);
+          if (!selectedExamId && examsRes.data.length > 0) {
+            setSelectedExamId(examsRes.data[0].id);
+          }
+        }
       } catch (e) {
+        const message = e instanceof Error ? e.message : 'Data fetch error';
+        if (message.toLowerCase().includes('forbidden') || message.toLowerCase().includes('invalid or expired token')) {
+          localStorage.removeItem('adminToken');
+          window.location.href = '/admin/login';
+          return;
+        }
         console.error('Data fetch error:', e);
       }
     };
@@ -42,7 +71,60 @@ export function AdminDashboard() {
     fetchData();
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedExamId]);
+
+  const selectedExam = examConfigs.find(exam => exam.id === selectedExamId);
+
+  const setActionMessage = (message: string) => {
+    setAdminActionMessage(message);
+    setTimeout(() => setAdminActionMessage(null), 3000);
+  };
+
+  const updateExamSettings = async (payload: Partial<Pick<AdminExamConfig, 'enabled' | 'duration' | 'startTime' | 'requireFullscreen'>>) => {
+    if (!selectedExam) return;
+    setSavingExam(true);
+    try {
+      const res = await fetchApi(`/dashboard/admin/exams/${selectedExam.id}/settings`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      if (res?.success) {
+        const updated = res.data as AdminExamConfig;
+        setExamConfigs(prev => prev.map(exam => (exam.id === updated.id ? updated : exam)));
+        setActionMessage('Exam settings saved');
+      }
+    } catch (error: any) {
+      setActionMessage(error?.message || 'Failed to save exam settings');
+    } finally {
+      setSavingExam(false);
+    }
+  };
+
+  const handleSendExamNotification = async () => {
+    if (!selectedExam) return;
+    const recipients = emailRecipients
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean);
+
+    if (recipients.length === 0) {
+      setActionMessage('Enter at least one recipient email');
+      return;
+    }
+
+    try {
+      const res = await fetchApi(`/dashboard/admin/exams/${selectedExam.id}/notify`, {
+        method: 'POST',
+        body: JSON.stringify({ recipients, message: emailMessage.trim() || undefined }),
+      });
+
+      if (res?.success) {
+        setActionMessage(`Email sent to ${res.sentTo || recipients.length} recipient(s)`);
+      }
+    } catch (error: any) {
+      setActionMessage(error?.message || 'Failed to send notification email');
+    }
+  };
 
   const filteredStudents = students.filter(s => {
     const matchesSearch = s.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -188,6 +270,165 @@ export function AdminDashboard() {
       <div className="flex h-[calc(100vh-140px)]">
         {/* Student Grid/List */}
         <main className="flex-1 overflow-auto p-4 lg:p-6">
+          <section className="mb-5 rounded-2xl border border-cyan/20 bg-cyan/5 p-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h3 className="font-sora text-base font-semibold text-white">Exam Controls</h3>
+                <p className="text-xs text-text-secondary">Enable tests, set timing, require fullscreen, and notify students</p>
+              </div>
+              {adminActionMessage && (
+                <div className="rounded-lg border border-cyan/30 bg-cyan/10 px-3 py-2 text-xs text-cyan">
+                  {adminActionMessage}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              <div className="space-y-3 rounded-xl border border-white/10 bg-navy-800/40 p-3">
+                <label className="text-xs text-text-secondary">Select Exam</label>
+                <select
+                  value={selectedExamId}
+                  onChange={(e) => setSelectedExamId(e.target.value)}
+                  className="input-dark w-full py-2 text-sm"
+                >
+                  {examConfigs.map(exam => (
+                    <option key={exam.id} value={exam.id}>{exam.id} - {exam.title}</option>
+                  ))}
+                </select>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    onClick={() => selectedExam && updateExamSettings({ enabled: !selectedExam.enabled })}
+                    disabled={!selectedExam || savingExam}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
+                  >
+                    {selectedExam?.enabled ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4 text-warning" />}
+                    {selectedExam?.enabled ? 'Disable Test' : 'Enable Test'}
+                  </button>
+                  <button
+                    onClick={() => selectedExam && updateExamSettings({ requireFullscreen: !selectedExam.requireFullscreen })}
+                    disabled={!selectedExam || savingExam}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
+                  >
+                    <CalendarDays className="h-4 w-4 text-cyan" />
+                    {selectedExam?.requireFullscreen ? 'Fullscreen: ON' : 'Fullscreen: OFF'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs text-text-secondary">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      min={10}
+                      max={480}
+                      value={selectedExam?.duration || ''}
+                      onChange={(e) => {
+                        const value = Number(e.target.value || 0);
+                        setExamConfigs(prev => prev.map(exam => (
+                          exam.id === selectedExamId ? { ...exam, duration: value } : exam
+                        )));
+                      }}
+                      onBlur={() => selectedExam && updateExamSettings({ duration: selectedExam.duration })}
+                      className="input-dark mt-1 w-full py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-text-secondary">Start Time</label>
+                    <input
+                      type="datetime-local"
+                      value={selectedExam ? new Date(selectedExam.startTime).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        const parsed = new Date(e.target.value);
+                        if (Number.isNaN(parsed.getTime())) return;
+                        const iso = parsed.toISOString();
+                        setExamConfigs(prev => prev.map(exam => (
+                          exam.id === selectedExamId ? { ...exam, startTime: iso } : exam
+                        )));
+                      }}
+                      onBlur={() => selectedExam && updateExamSettings({ startTime: selectedExam.startTime })}
+                      className="input-dark mt-1 w-full py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-white/10 bg-navy-800/40 p-3">
+                <label className="text-xs text-text-secondary">Send Exam Email Notification</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                  <input
+                    type="text"
+                    value={emailRecipients}
+                    onChange={(e) => setEmailRecipients(e.target.value)}
+                    placeholder="student1@college.edu, student2@college.edu"
+                    className="input-dark w-full py-2 pl-10 text-sm"
+                  />
+                </div>
+                <textarea
+                  value={emailMessage}
+                  onChange={(e) => setEmailMessage(e.target.value)}
+                  placeholder="Optional custom message"
+                  rows={4}
+                  className="input-dark w-full resize-none py-2 text-sm"
+                />
+                <button
+                  onClick={handleSendExamNotification}
+                  disabled={!selectedExam}
+                  className="flex items-center gap-2 rounded-lg bg-cyan px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-cyan-light disabled:opacity-60"
+                >
+                  <SendHorizontal className="h-4 w-4" />
+                  Send Email
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-sora text-base font-semibold text-white">Attended Students</h3>
+              <span className="text-xs text-text-secondary">{students.length} total</span>
+            </div>
+
+            {students.length === 0 ? (
+              <p className="text-sm text-text-secondary">No attended students yet.</p>
+            ) : (
+              <div className="max-h-48 overflow-auto rounded-lg border border-white/10">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-white/5 text-xs text-text-secondary">
+                    <tr>
+                      <th className="px-3 py-2">Student</th>
+                      <th className="px-3 py-2">Exam</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Last Activity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.map((student) => (
+                      <tr key={student.sessionId} className="border-t border-white/5">
+                        <td className="px-3 py-2 text-white">{student.studentName}</td>
+                        <td className="px-3 py-2 text-text-secondary">{student.examTitle}</td>
+                        <td className="px-3 py-2">
+                          <span className={cn(
+                            'rounded-full px-2 py-0.5 text-xs',
+                            student.status === 'online' && 'bg-success/20 text-success',
+                            student.status === 'violation' && 'bg-violation/20 text-violation',
+                            student.status === 'away' && 'bg-warning/20 text-warning',
+                            student.status === 'offline' && 'bg-white/10 text-white/60'
+                          )}>
+                            {student.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-text-secondary">{getRelativeTime(student.lastActivity)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
           {viewMode === 'grid' ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredStudents.map((student) => (

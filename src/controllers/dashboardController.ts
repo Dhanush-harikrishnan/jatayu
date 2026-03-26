@@ -2,6 +2,63 @@ import { Request, Response, NextFunction } from 'express';
 import { awsService, dynamoClient } from '../services/awsService';
 import { ScanCommand } from '@aws-sdk/client-dynamodb';
 import { config } from '../config/env';
+import { sessionRegistry } from '../services/sessionRegistry';
+
+type ExamConfig = {
+  id: string;
+  title: string;
+  description: string;
+  totalQuestions: number;
+  instructions: string[];
+  duration: number;
+  startTime: string;
+  enabled: boolean;
+  requireFullscreen: boolean;
+};
+
+const examConfigs = new Map<string, ExamConfig>([
+  [
+    'EXAM-101',
+    {
+      id: 'EXAM-101',
+      title: 'Introduction to Computer Science',
+      description: 'Covers basic algorithms, data structures, and software engineering principles.',
+      totalQuestions: 50,
+      instructions: ['Ensure your webcam is on', 'Close all other applications', 'No bathroom breaks allowed'],
+      duration: 120,
+      startTime: new Date().toISOString(),
+      enabled: true,
+      requireFullscreen: true,
+    },
+  ],
+  [
+    'EXAM-102',
+    {
+      id: 'EXAM-102',
+      title: 'Advanced Mathematics',
+      description: 'Calculus, linear algebra, and discrete mathematics.',
+      totalQuestions: 40,
+      instructions: [],
+      duration: 180,
+      startTime: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(),
+      enabled: false,
+      requireFullscreen: true,
+    },
+  ],
+]);
+
+function resolveExamStatus(exam: ExamConfig): 'upcoming' | 'active' | 'completed' {
+  const now = Date.now();
+  const startMs = new Date(exam.startTime).getTime();
+  if (!Number.isFinite(startMs)) return 'upcoming';
+
+  if (!exam.enabled) return 'upcoming';
+
+  const endMs = startMs + exam.duration * 60 * 1000;
+  if (now < startMs) return 'upcoming';
+  if (now >= startMs && now <= endMs) return 'active';
+  return 'completed';
+}
 
 function normalizeViolationType(raw: string): string {
   const upper = (raw || '').toUpperCase();
@@ -124,7 +181,25 @@ export const getAdminStudents = async (req: Request, res: Response, next: NextFu
       violationCount: s.violationCount,
     }));
 
-    res.json({ success: true, data: students });
+    const existingSessionIds = new Set(students.map(s => s.sessionId));
+    const registryOnlyStudents = sessionRegistry
+      .list()
+      .filter(s => !existingSessionIds.has(s.sessionId))
+      .map(s => ({
+        sessionId: s.sessionId,
+        studentId: s.studentId,
+        studentName: s.studentName,
+        examTitle: s.examId,
+        status: s.status,
+        joinTime: s.joinTime,
+        lastActivity: s.lastActivity,
+        violationCount: 0,
+      }));
+
+    const mergedStudents = [...students, ...registryOnlyStudents]
+      .sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime());
+
+    res.json({ success: true, data: mergedStudents });
   } catch (error) {
     next(error);
   }
@@ -188,31 +263,141 @@ export const getAdminViolations = async (req: Request, res: Response, next: Next
   }
 };
 
+export const getAdminExams = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const exams = Array.from(examConfigs.values()).map(exam => ({
+      ...exam,
+      status: resolveExamStatus(exam),
+    }));
+
+    res.json({ success: true, data: exams });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateAdminExamSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { examId } = req.params;
+    const current = examConfigs.get(examId);
+
+    if (!current) {
+      return res.status(404).json({ success: false, message: 'Exam not found' });
+    }
+
+    const { duration, startTime, enabled, requireFullscreen } = req.body || {};
+
+    if (duration !== undefined) {
+      const parsedDuration = Number(duration);
+      if (!Number.isFinite(parsedDuration) || parsedDuration < 10 || parsedDuration > 480) {
+        return res.status(400).json({ success: false, message: 'duration must be between 10 and 480 minutes' });
+      }
+      current.duration = Math.round(parsedDuration);
+    }
+
+    if (startTime !== undefined) {
+      const parsedStart = new Date(startTime).getTime();
+      if (!Number.isFinite(parsedStart)) {
+        return res.status(400).json({ success: false, message: 'startTime must be a valid ISO date string' });
+      }
+      current.startTime = new Date(parsedStart).toISOString();
+    }
+
+    if (enabled !== undefined) {
+      current.enabled = Boolean(enabled);
+    }
+
+    if (requireFullscreen !== undefined) {
+      current.requireFullscreen = Boolean(requireFullscreen);
+    }
+
+    examConfigs.set(examId, current);
+
+    res.json({
+      success: true,
+      message: 'Exam settings updated',
+      data: {
+        ...current,
+        status: resolveExamStatus(current),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendAdminExamNotification = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { examId } = req.params;
+    const exam = examConfigs.get(examId);
+    if (!exam) {
+      return res.status(404).json({ success: false, message: 'Exam not found' });
+    }
+
+    const { recipients, message } = req.body || {};
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({ success: false, message: 'recipients must be a non-empty email array' });
+    }
+
+    const cleanRecipients = recipients
+      .map((r: unknown) => (typeof r === 'string' ? r.trim() : ''))
+      .filter((r: string) => r.length > 3 && r.includes('@'));
+
+    if (cleanRecipients.length === 0) {
+      return res.status(400).json({ success: false, message: 'No valid recipient emails provided' });
+    }
+
+    const emailBody =
+      message ||
+      `Exam update: ${exam.title} (${exam.id})\nStart: ${exam.startTime}\nDuration: ${exam.duration} minutes\nEnabled: ${exam.enabled ? 'Yes' : 'No'}\nFullscreen required: ${exam.requireFullscreen ? 'Yes' : 'No'}`;
+
+    const results = await Promise.allSettled(
+      cleanRecipients.map(email => awsService.sendAdminNotificationEmail(email, emailBody))
+    );
+
+    const sent = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.length - sent;
+
+    if (sent === 0) {
+      const firstFailure = results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined;
+      const reason = firstFailure?.reason;
+      const messageText =
+        reason?.message ||
+        'Failed to send notification emails. Check AWS SES source email and recipient verification.';
+
+      return res.status(502).json({
+        success: false,
+        message: messageText,
+        sentTo: 0,
+        failed,
+      });
+    }
+
+    const summaryMessage =
+      failed > 0
+        ? `Email sent to ${sent} recipient(s); ${failed} failed.`
+        : `Notification email sent to ${sent} recipient(s).`;
+
+    res.json({ success: true, message: summaryMessage, sentTo: sent, failed });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getStudentExams = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Returning a realistic exam payload until an Exams table is created
-    const exams = [
-      {
-        id: 'EXAM-101',
-        title: 'Introduction to Computer Science',
-        description: 'Covers basic algorithms, data structures, and software engineering principles.',
-        startTime: new Date().toISOString(),
-        duration: 120,
-        totalQuestions: 50,
-        status: 'active',
-        instructions: ['Ensure your webcam is on', 'Close all other applications', 'No bathroom breaks allowed']
-      },
-      {
-        id: 'EXAM-102',
-        title: 'Advanced Mathematics',
-        description: 'Calculus, linear algebra, and discrete mathematics.',
-        startTime: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(),
-        duration: 180,
-        totalQuestions: 40,
-        status: 'upcoming',
-        instructions: []
-      }
-    ];
+    const exams = Array.from(examConfigs.values()).map(exam => ({
+      id: exam.id,
+      title: exam.title,
+      description: exam.description,
+      startTime: exam.startTime,
+      duration: exam.duration,
+      totalQuestions: exam.totalQuestions,
+      status: resolveExamStatus(exam),
+      instructions: exam.instructions,
+      enabled: exam.enabled,
+      requireFullscreen: exam.requireFullscreen,
+    }));
     res.json({ success: true, data: exams });
   } catch (error) {
     next(error);

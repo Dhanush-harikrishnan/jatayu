@@ -1,14 +1,24 @@
 import { Router } from 'express';
-import { getAdminStudents, getAdminViolations, getStudentExams } from '../controllers/dashboardController';
-import { authenticate } from '../middlewares/authMiddleware';
+import {
+	getAdminStudents,
+	getAdminViolations,
+	getStudentExams,
+	getAdminExams,
+	updateAdminExamSettings,
+	sendAdminExamNotification,
+} from '../controllers/dashboardController';
+import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // Dashboard routes require authentication
 router.use(authenticate);
 
-router.get('/admin/students', getAdminStudents);
-router.get('/admin/violations', getAdminViolations);
+router.get('/admin/students', requireRole(['admin']), getAdminStudents);
+router.get('/admin/violations', requireRole(['admin']), getAdminViolations);
+router.get('/admin/exams', requireRole(['admin']), getAdminExams);
+router.patch('/admin/exams/:examId/settings', requireRole(['admin']), updateAdminExamSettings);
+router.post('/admin/exams/:examId/notify', requireRole(['admin']), sendAdminExamNotification);
 router.get('/student/exams', getStudentExams);
 
 export const dashboardRoutes = router;

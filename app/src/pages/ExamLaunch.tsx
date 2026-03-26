@@ -36,6 +36,9 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   const [livenessSessionId, setLivenessSessionId] = useState<string | null>(null);
   const [livenessPassed, setLivenessPassed] = useState<boolean>(false);
   const [livenessError, setLivenessError] = useState<string | null>(null);
+  const [examEnabled, setExamEnabled] = useState(true);
+  const [examDurationMins, setExamDurationMins] = useState(60);
+  const [requireFullscreen, setRequireFullscreen] = useState(true);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const setupCheckInFlightRef = useRef(false);
@@ -50,6 +53,26 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   useEffect(() => {
     setPairingCode(generatePairingCode());
   }, []);
+
+  useEffect(() => {
+    const loadExamPolicy = async () => {
+      try {
+        const res = await fetchApi('/dashboard/student/exams');
+        if (!res?.success || !Array.isArray(res?.data)) return;
+
+        const currentExam = res.data.find((exam: any) => exam.id === examId);
+        if (!currentExam) return;
+
+        setExamEnabled(currentExam.enabled !== false);
+        setExamDurationMins(Number(currentExam.duration) > 0 ? Number(currentExam.duration) : 60);
+        setRequireFullscreen(currentExam.requireFullscreen !== false);
+      } catch (err) {
+        console.error('Failed to load exam policy:', err);
+      }
+    };
+
+    loadExamPolicy();
+  }, [examId]);
 
   const [reqStatus, setReqStatus] = useState({
     internet: 'checking' as 'checking' | 'passed' | 'failed' | 'pending',
@@ -256,10 +279,14 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       return () => clearTimeout(timer);
     }
     if (currentStep === 4 && countdown === 0) {
+      localStorage.setItem(
+        `examPolicy:${examId}`,
+        JSON.stringify({ duration: examDurationMins, requireFullscreen })
+      );
       allowNavigationRef.current = true;
       window.location.href = `/exam/${examId}/proctor`;
     }
-  }, [currentStep, countdown, examId]);
+  }, [currentStep, countdown, examId, examDurationMins, requireFullscreen]);
 
   const navigateSafely = (url: string) => {
     allowNavigationRef.current = true;
@@ -360,6 +387,20 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                   <p className="mt-2 text-text-secondary">Make sure you meet all requirements for a secure exam session</p>
                 </div>
 
+                {!examEnabled && (
+                  <div className="glass-card border border-violation/30 bg-violation/10 p-6">
+                    <h4 className="font-semibold text-violation">This test is currently disabled by admin</h4>
+                    <p className="mt-2 text-sm text-white/70">Please contact your instructor and return to dashboard.</p>
+                    <button
+                      type="button"
+                      onClick={() => navigateSafely('/dashboard')}
+                      className="mt-4 rounded-lg bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/20"
+                    >
+                      Back to Dashboard
+                    </button>
+                  </div>
+                )}
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <RequirementCard
                     icon={Wifi}
@@ -418,10 +459,10 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 <div className="flex justify-end">
                   <button 
                     onClick={handleNextStep} 
-                    disabled={reqStatus.screen !== 'passed' || !rulesAccepted}
+                    disabled={!examEnabled || reqStatus.screen !== 'passed' || !rulesAccepted}
                     className={cn(
                       'btn-primary flex items-center gap-2',
-                      (reqStatus.screen !== 'passed' || !rulesAccepted) && 'opacity-50 cursor-not-allowed'
+                      (!examEnabled || reqStatus.screen !== 'passed' || !rulesAccepted) && 'opacity-50 cursor-not-allowed'
                     )}
                   >
                     Continue to Pairing

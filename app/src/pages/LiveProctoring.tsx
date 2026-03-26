@@ -36,8 +36,30 @@ const QUESTIONS = [
 ];
 
 export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
-  const [sessionTime, setSessionTime] = useState(0);
+  const [sessionTime, setSessionTime] = useState(() => {
+    const savedPolicyRaw = localStorage.getItem(`examPolicy:${examId}`);
+    if (!savedPolicyRaw) return 3600;
+    try {
+      const parsed = JSON.parse(savedPolicyRaw) as { duration?: number };
+      if (typeof parsed.duration === 'number' && parsed.duration > 0) {
+        return Math.floor(parsed.duration * 60);
+      }
+      return 3600;
+    } catch {
+      return 3600;
+    }
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [requireFullscreen] = useState(() => {
+    const savedPolicyRaw = localStorage.getItem(`examPolicy:${examId}`);
+    if (!savedPolicyRaw) return true;
+    try {
+      const parsed = JSON.parse(savedPolicyRaw) as { requireFullscreen?: boolean };
+      return parsed.requireFullscreen !== false;
+    } catch {
+      return true;
+    }
+  });
   const [toasts, setToasts] = useState<Toast[]>([]);
   
   // Real ML integration states
@@ -57,6 +79,13 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
   const noFaceStrikeRef = useRef(0);
   const allowNavigationRef = useRef(false);
 
+  const addToast = (toast: Toast) => {
+    setToasts(prev => [toast, ...prev].slice(0, 5));
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toast.id));
+    }, 5000);
+  };
+
   // Session timer & navigation protection
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -68,8 +97,6 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Initial countdown 60 mins
-    setSessionTime(3600);
     const timer = setInterval(() => {
         setSessionTime(t => (t > 0 ? t - 1 : 0));
     }, 1000);
@@ -78,7 +105,43 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
         clearInterval(timer);
         window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [examId]);
+
+  useEffect(() => {
+    if (!requireFullscreen) return;
+
+    const ensureFullscreen = async () => {
+      if (!document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen();
+          setIsFullscreen(true);
+        } catch (err) {
+          console.error('Fullscreen request denied:', err);
+        }
+      }
+    };
+
+    const onFullscreenChange = () => {
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+      if (!active) {
+        addToast({
+          id: Date.now().toString(),
+          type: 'warning',
+          title: 'Fullscreen Required',
+          message: 'Returning to fullscreen for secure exam mode.',
+        });
+        void ensureFullscreen();
+      }
+    };
+
+    void ensureFullscreen();
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+    };
+  }, [requireFullscreen]);
 
   // Camera initialization
   useEffect(() => {
@@ -179,16 +242,9 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
       }, 'image/jpeg', 0.8);
     };
 
-    const interval = setInterval(captureAndAnalyze, 10000); // Analyze every 10 seconds
+    const interval = setInterval(captureAndAnalyze, 3000); // Analyze every 3 seconds
     return () => clearInterval(interval);
   }, [examId, realViolations]);
-
-  const addToast = (toast: Toast) => {
-    setToasts(prev => [toast, ...prev].slice(0, 5));
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== toast.id));
-    }, 5000);
-  };
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
@@ -199,6 +255,9 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
   };
 
   const toggleFullscreen = () => {
+    if (requireFullscreen) {
+      return;
+    }
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
       setIsFullscreen(true);
@@ -288,7 +347,8 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleFullscreen}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10"
+              disabled={requireFullscreen}
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>

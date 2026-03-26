@@ -289,6 +289,28 @@ export const awsService = {
     }
   },
 
+  sendAdminNotificationEmail: async (toEmail: string, body: string) => {
+    const command = new SendEmailCommand({
+      Destination: { ToAddresses: [toEmail] },
+      Message: {
+        Body: {
+          Text: { Data: body },
+          Html: { Data: `<pre style="font-family:Arial,sans-serif; white-space:pre-wrap">${body}</pre>` },
+        },
+        Subject: { Data: 'SecureGuard Pro - Exam Notification' },
+      },
+      Source: config.aws.sesSourceEmail,
+    });
+
+    try {
+      await sesClient.send(command);
+      logger.info(`Admin notification email sent to ${toEmail}`);
+    } catch (err) {
+      logger.error('Failed to send admin notification email:', err);
+      throw err;
+    }
+  },
+
   saveUserOTP: async (email: string, otp: string, expiry: string) => {
     const command = new UpdateItemCommand({
       TableName: 'SecureGuardUsers',

@@ -27,6 +27,8 @@ export interface Exam {
   startTime: Date;
   endTime: Date;
   status: 'upcoming' | 'active' | 'completed';
+  enabled?: boolean;
+  requireFullscreen?: boolean;
   totalQuestions: number;
   passingScore: number;
   instructions: string[];

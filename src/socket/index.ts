@@ -5,6 +5,7 @@ import { logger } from '../logger';
 import { registerWebRTCHandlers } from './webrtcHandler';
 import { registerTelemetryHandlers } from './telemetryHandler';
 import { CorrelationEngine } from '../services/correlationEngine';
+import { sessionRegistry } from '../services/sessionRegistry';
 
 export let io: SocketIOServer;
 
@@ -36,6 +37,17 @@ export const initializeSocketServer = (server: HttpServer) => {
     const { sessionId, role, userId } = socket.data.user;
     logger.info(`Socket connected: ${socket.id} (Role: ${role}, Session: ${sessionId})`);
 
+    if (role === 'primary') {
+      const tokenUser: any = socket.data.user;
+      sessionRegistry.upsert({
+        sessionId,
+        studentId: userId || sessionId,
+        studentName: tokenUser.name || userId || sessionId,
+        examId: tokenUser.examId || 'EXAM-101',
+        status: 'online',
+      });
+    }
+
     // Join room based on session (for laptop & mobile correlation)
     const roomName = `session_${sessionId}`;
     socket.join(roomName);
@@ -60,6 +72,9 @@ export const initializeSocketServer = (server: HttpServer) => {
 
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.id}`);
+      if (role === 'primary') {
+        sessionRegistry.touch(sessionId, 'offline');
+      }
       // Clean up engine if all clients in session disconnected
       const clientsInRoom = io.sockets.adapter.rooms.get(roomName)?.size || 0;
       if (clientsInRoom === 0) {

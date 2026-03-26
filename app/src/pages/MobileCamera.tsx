@@ -32,6 +32,14 @@ export function MobileCamera({ pairingCode = 'ABC123' }: MobileCameraProps) {
     }
   }, [pairingCode]);
 
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   // Gyroscope simulation
   useEffect(() => {
     if (!isConnected) return;
@@ -65,10 +73,7 @@ export function MobileCamera({ pairingCode = 'ABC123' }: MobileCameraProps) {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false,
-      });
+      const stream = await requestCameraStream(facingMode);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -87,10 +92,7 @@ export function MobileCamera({ pairingCode = 'ABC123' }: MobileCameraProps) {
     setFacingMode(newFacingMode);
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacingMode },
-        audio: false,
-      });
+      const stream = await requestCameraStream(newFacingMode);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -98,6 +100,26 @@ export function MobileCamera({ pairingCode = 'ABC123' }: MobileCameraProps) {
     } catch (err) {
       console.error('Camera switch failed:', err);
     }
+  };
+
+  const requestCameraStream = async (targetFacingMode: 'environment' | 'user') => {
+    // Try strict camera first, then progressively fall back for wider mobile compatibility.
+    const candidates: MediaStreamConstraints[] = [
+      { video: { facingMode: { exact: targetFacingMode } }, audio: false },
+      { video: { facingMode: targetFacingMode }, audio: false },
+      { video: true, audio: false },
+    ];
+
+    let lastError: unknown;
+    for (const constraints of candidates) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    throw lastError;
   };
 
   return (

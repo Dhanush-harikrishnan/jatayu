@@ -53,7 +53,7 @@ export function StudentDashboard() {
   }, []);
 
   const upcomingExams = exams.filter(e => e.status === 'upcoming');
-  const activeExams = exams.filter(e => e.status === 'active');
+  const activeExams = exams.filter(e => e.status === 'active' && e.enabled !== false);
   const completedExams = exams.filter(e => e.status === 'completed');
 
   const getStatusBadge = (status: Exam['status']) => {
@@ -232,6 +232,8 @@ interface ExamCardProps {
 }
 
 function ExamCard({ exam, statusBadge }: ExamCardProps) {
+  const canStart = exam.status === 'active' && exam.enabled !== false;
+
   return (
     <motion.div
       whileHover={{ scale: 1.005 }}
@@ -268,7 +270,7 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          {exam.status === 'active' && (
+          {canStart && (
             <a
               href={`/exam/${exam.id}/start`}
               className="btn-primary flex items-center gap-2 whitespace-nowrap"
@@ -276,6 +278,14 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
               Start Exam
               <ChevronRight className="h-4 w-4" />
             </a>
+          )}
+          {exam.status === 'active' && exam.enabled === false && (
+            <button
+              disabled
+              className="rounded-xl bg-white/5 px-4 py-2 text-sm font-medium text-white/40 border border-white/10 cursor-not-allowed whitespace-nowrap"
+            >
+              Disabled By Admin
+            </button>
           )}
           {exam.status === 'upcoming' && (
             <button
