@@ -27,6 +27,11 @@ Node.js 20, Express, Socket.io v4 (websocket-only), AWS SDK v3, TypeScript, PM2.
    ```
 2. Set up environment variables:
    Copy `.env.example` to `.env` and fill in your AWS credentials and JWT secret.
+   Make sure to provision the following AWS services:
+   - **IAM User** with access to Rekognition, S3, DynamoDB, and SES.
+   - **Rekognition** in the Mumbai region (`ap-south-1`).
+   - **S3 Bucket** and **DynamoDB** in the Hyderabad region (`ap-south-2`).
+   - **SES** verified email addresses for sending pairing links and PDF reports.
    ```bash
    cp .env.example .env
    ```

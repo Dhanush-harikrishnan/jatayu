@@ -48,6 +48,11 @@ function App() {
       const examId = path.split('/')[2];
       return <LiveProctoring examId={examId} />;
     }
+    if (path.startsWith('/mobile-pair')) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const code = searchParams.get('code') || undefined;
+      return <MobileCamera pairingCode={code} />;
+    }
     
     // Mobile PWA route
     if (path === '/mobile-camera') return <MobileCamera />;

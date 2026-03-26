@@ -168,6 +168,36 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleEndExam = async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    const email = 'student@university.edu'; // In a real app, fetch from user context
+
+    try {
+      if (sessionId) {
+        await fetchApi(`/exam/${examId}/report/${sessionId}`, {
+          method: 'POST',
+          body: JSON.stringify({ email, violations })
+        });
+
+        addToast({
+          id: Date.now().toString(),
+          type: 'success',
+          title: 'Exam Submitted',
+          message: 'Your exam report has been generated and sent to your email.'
+        });
+      }
+
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+
+    } catch (error) {
+      console.error('Failed to end exam and send report:', error);
+      // Fallback
+      window.location.href = '/dashboard';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-navy-900 overflow-hidden">
       {/* Top Bar */}
@@ -214,6 +244,13 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
             <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violation/20 text-violation hover:bg-violation/30 transition-colors">
               <Flag className="h-4 w-4" />
               <span className="text-sm font-medium">Report Issue</span>
+            </button>
+            <button
+              onClick={handleEndExam}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success text-navy-900 hover:bg-success-light font-semibold transition-colors shadow-[0_0_15px_rgba(46,204,113,0.3)]"
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>Finish Exam</span>
             </button>
           </div>
         </div>

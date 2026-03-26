@@ -2,7 +2,7 @@ import { RekognitionClient, DetectFacesCommand, DetectLabelsCommand, CreateFaceL
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { DynamoDBClient, PutItemCommand, ListTablesCommand } from '@aws-sdk/client-dynamodb';
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { SESClient, SendEmailCommand, SendRawEmailCommand } from '@aws-sdk/client-ses';
 import { config } from '../config/env';
 import { logger } from '../logger';
 
@@ -109,6 +109,36 @@ export const awsService = {
       return response.SessionId!;
     } catch (err) {
       logger.error('Failed to create face liveness session', err);
+      throw err;
+    }
+  },
+
+  sendPdfReportEmail: async (toAddress: string, pdfBuffer: Buffer, subject: string, bodyText: string): Promise<void> => {
+    try {
+      const boundary = "NextPart_" + Date.now().toString(16);
+      let rawMessage =
+        `From: ${config.aws.sesSourceEmail}\n` +
+        `To: ${toAddress}\n` +
+        `Subject: ${subject}\n` +
+        `MIME-Version: 1.0\n` +
+        `Content-Type: multipart/mixed; boundary="${boundary}"\n\n` +
+        `--${boundary}\n` +
+        `Content-Type: text/plain; charset=UTF-8\n\n` +
+        `${bodyText}\n\n` +
+        `--${boundary}\n` +
+        `Content-Type: application/pdf; name="report.pdf"\n` +
+        `Content-Description: report.pdf\n` +
+        `Content-Disposition: attachment; filename="report.pdf"\n` +
+        `Content-Transfer-Encoding: base64\n\n` +
+        `${pdfBuffer.toString('base64')}\n\n` +
+        `--${boundary}--`;
+
+      const command = new SendRawEmailCommand({
+        RawMessage: { Data: Buffer.from(rawMessage) }
+      });
+      await sesClient.send(command);
+    } catch (err) {
+      logger.error('Failed to send PDF report email:', err);
       throw err;
     }
   },
