@@ -6,8 +6,8 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   jwtSecret: process.env.JWT_SECRET || 'fallback_secret',
   aws: {
-    region: process.env.AWS_REGION || 'us-east-1',
-    rekognitionRegion: process.env.AWS_REKOGNITION_REGION || 'us-east-1',
+    region: process.env.AWS_REGION || 'ap-south-2', // S3 and DynamoDB in Hyderabad
+    rekognitionRegion: process.env.AWS_REKOGNITION_REGION || 'ap-south-1', // Rekognition in Mumbai
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
     s3Bucket: process.env.AWS_S3_BUCKET || '',
