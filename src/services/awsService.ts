@@ -168,6 +168,25 @@ export const awsService = {
     return dynamoClient.send(command);
   },
 
+  getUserByEmail: async (email: string) => {
+    // Mock user logic for demo due to AWS IAM DynamoDB limitations
+    // Real implementation would use DynamoDB GetItem
+    if (email === 'dhanushhari150504@gmail.com') {
+      return {
+        email,
+        password: await import('bcrypt').then(m => m.hash('adminpassword', 10)),
+        role: 'admin'
+      };
+    } else if (email === 'barathsyntax@gmail.com') {
+      return {
+        email,
+        password: await import('bcrypt').then(m => m.hash('studentpassword', 10)),
+        role: 'student'
+      };
+    }
+    return null;
+  },
+
   sendMagicLinkEmail: async (toEmail: string, link: string) => {
     const command = new SendEmailCommand({
       Destination: { ToAddresses: [toEmail] },

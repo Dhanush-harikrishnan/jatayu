@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { generateToken } from '../utils/jwt';
 import { awsService } from '../services/awsService';
+import { generatePdfReport } from '../services/pdfService';
 
 import { logger } from '../logger';
 
@@ -62,8 +63,6 @@ export const analyzeFrame = async (req: Request, res: Response, next: NextFuncti
     next(error);
   }
 };
-
-import { generatePdfReport } from '../services/pdfService';
 
 export const sendExamReport = async (req: Request, res: Response, next: NextFunction) => {
   try {

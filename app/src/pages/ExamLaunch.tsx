@@ -8,9 +8,22 @@ import {
 } from 'lucide-react';
 import { cn, generatePairingCode } from '@/lib/utils';
 import { fetchApi } from '@/lib/api';
+import { Amplify } from 'aws-amplify';
 import { FaceLivenessDetector } from '@aws-amplify/ui-react-liveness';
 import '@aws-amplify/ui-react/styles.css';
 import { ThemeProvider } from '@aws-amplify/ui-react';
+
+// Configure Amplify for AWS services required by FaceLivenessDetector
+// Note: In a real environment, you must provide valid cognito identity pool configs
+Amplify.configure({
+  Auth: {
+    Cognito: {
+      userPoolId: import.meta.env.VITE_USER_POOL_ID || 'us-east-1_xxxxxxxxx',
+      userPoolClientId: import.meta.env.VITE_USER_POOL_CLIENT_ID || 'xxxxxxxxxxxxxxxxx',
+      identityPoolId: import.meta.env.VITE_IDENTITY_POOL_ID || 'us-east-1:xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    }
+  }
+});
 
 interface ExamLaunchProps {
   examId?: string;

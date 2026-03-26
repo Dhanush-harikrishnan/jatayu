@@ -1,0 +1,105 @@
+[TAILING] Tailing last 100 lines for [all] processes (change the value with --lines option)
+/home/jules/.pm2/pm2.log last 100 lines:
+PM2        | 2026-03-26T04:10:54: PM2 log: ===============================================================================
+PM2        | 2026-03-26T04:10:54: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+PM2        | 2026-03-26T04:10:54: PM2 log: Time                 : Thu Mar 26 2026 04:10:54 GMT+0000 (Coordinated Universal Time)
+PM2        | 2026-03-26T04:10:54: PM2 log: PM2 version          : 5.4.3
+PM2        | 2026-03-26T04:10:54: PM2 log: Node.js version      : 22.22.1
+PM2        | 2026-03-26T04:10:54: PM2 log: Current arch         : x64
+PM2        | 2026-03-26T04:10:54: PM2 log: PM2 home             : /home/jules/.pm2
+PM2        | 2026-03-26T04:10:54: PM2 log: PM2 PID file         : /home/jules/.pm2/pm2.pid
+PM2        | 2026-03-26T04:10:54: PM2 log: RPC socket file      : /home/jules/.pm2/rpc.sock
+PM2        | 2026-03-26T04:10:54: PM2 log: BUS socket file      : /home/jules/.pm2/pub.sock
+PM2        | 2026-03-26T04:10:54: PM2 log: Application log path : /home/jules/.pm2/logs
+PM2        | 2026-03-26T04:10:54: PM2 log: Worker Interval      : 30000
+PM2        | 2026-03-26T04:10:54: PM2 log: Process dump file    : /home/jules/.pm2/dump.pm2
+PM2        | 2026-03-26T04:10:54: PM2 log: Concurrent actions   : 2
+PM2        | 2026-03-26T04:10:54: PM2 log: SIGTERM timeout      : 1600
+PM2        | 2026-03-26T04:10:54: PM2 log: ===============================================================================
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:0] starting in -cluster mode-
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:0] online
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:1] starting in -cluster mode-
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:1] online
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:2] starting in -cluster mode-
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:2] online
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:3] starting in -cluster mode-
+PM2        | 2026-03-26T04:10:54: PM2 log: App [secureguard-pro:3] online
+
+/home/jules/.pm2/logs/secureguard-pro-error-0.log last 100 lines:
+/home/jules/.pm2/logs/secureguard-pro-error-1.log last 100 lines:
+/home/jules/.pm2/logs/secureguard-pro-error-2.log last 100 lines:
+/home/jules/.pm2/logs/secureguard-pro-error-3.log last 100 lines:
+/home/jules/.pm2/logs/secureguard-pro-out-0.log last 100 lines:
+0|securegu | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:10:55.226Z"}
+
+/home/jules/.pm2/logs/secureguard-pro-out-1.log last 100 lines:
+1|securegu | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:10:55.249Z"}
+
+/home/jules/.pm2/logs/secureguard-pro-out-2.log last 100 lines:
+2|securegu | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:10:55.260Z"}
+
+/home/jules/.pm2/logs/secureguard-pro-out-3.log last 100 lines:
+3|securegu | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:10:55.300Z"}
+
+0|secureguard-pro  | [0mPOST /auth/login [33m400[0m 3.447 ms - 60[0m
+1|secureguard-pro  | [0mPOST /auth/login [32m200[0m 7.791 ms - 390[0m
+2|secureguard-pro  | [0mPOST /auth/login [32m200[0m 7.014 ms - 390[0m
+PM2                | Stopping app:secureguard-pro id:0
+PM2                | Stopping app:secureguard-pro id:1
+PM2                | App name:secureguard-pro id:0 disconnected
+PM2                | App [secureguard-pro:0] exited with code [0] via signal [SIGINT]
+PM2                | App name:secureguard-pro id:1 disconnected
+PM2                | App [secureguard-pro:1] exited with code [0] via signal [SIGINT]
+PM2                | pid=42881 msg=process killed
+PM2                | App [secureguard-pro:0] starting in -cluster mode-
+PM2                | pid=42888 msg=process killed
+PM2                | App [secureguard-pro:1] starting in -cluster mode-
+PM2                | App [secureguard-pro:0] online
+PM2                | Stopping app:secureguard-pro id:2
+PM2                | App [secureguard-pro:1] online
+PM2                | Stopping app:secureguard-pro id:3
+PM2                | App name:secureguard-pro id:2 disconnected
+PM2                | App [secureguard-pro:2] exited with code [0] via signal [SIGINT]
+PM2                | App name:secureguard-pro id:3 disconnected
+PM2                | App [secureguard-pro:3] exited with code [0] via signal [SIGINT]
+PM2                | pid=42895 msg=process killed
+PM2                | App [secureguard-pro:2] starting in -cluster mode-
+PM2                | pid=42908 msg=process killed
+PM2                | App [secureguard-pro:3] starting in -cluster mode-
+PM2                | App [secureguard-pro:2] online
+PM2                | App [secureguard-pro:3] online
+0|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:24:00.749Z"}
+1|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:24:00.770Z"}
+2|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:24:00.902Z"}
+3|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:24:00.910Z"}
+0|secureguard-pro  | [0mPOST /auth/login [32m200[0m 6.430 ms - 390[0m
+1|secureguard-pro  | [0mPOST /auth/login [32m200[0m 6.458 ms - 390[0m
+PM2                | Stopping app:secureguard-pro id:0
+PM2                | Stopping app:secureguard-pro id:1
+PM2                | App name:secureguard-pro id:0 disconnected
+PM2                | App [secureguard-pro:0] exited with code [0] via signal [SIGINT]
+PM2                | App name:secureguard-pro id:1 disconnected
+PM2                | App [secureguard-pro:1] exited with code [0] via signal [SIGINT]
+PM2                | pid=46983 msg=process killed
+PM2                | App [secureguard-pro:0] starting in -cluster mode-
+PM2                | pid=46984 msg=process killed
+PM2                | App [secureguard-pro:1] starting in -cluster mode-
+PM2                | App [secureguard-pro:0] online
+PM2                | App [secureguard-pro:1] online
+PM2                | Stopping app:secureguard-pro id:2
+PM2                | Stopping app:secureguard-pro id:3
+PM2                | App name:secureguard-pro id:2 disconnected
+PM2                | App [secureguard-pro:2] exited with code [0] via signal [SIGINT]
+PM2                | App name:secureguard-pro id:3 disconnected
+PM2                | App [secureguard-pro:3] exited with code [0] via signal [SIGINT]
+PM2                | pid=47021 msg=process killed
+PM2                | App [secureguard-pro:2] starting in -cluster mode-
+PM2                | pid=47022 msg=process killed
+PM2                | App [secureguard-pro:3] starting in -cluster mode-
+PM2                | App [secureguard-pro:2] online
+PM2                | App [secureguard-pro:3] online
+0|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:31:25.405Z"}
+1|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:31:25.444Z"}
+2|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:31:25.564Z"}
+3|secureguard-pro  | [32minfo[39m: Server is running in production mode on port 3001 {"service":"secureguard-pro","timestamp":"2026-03-26T04:31:25.654Z"}
+0|secureguard-pro  | [0mPOST /auth/login [32m200[0m 156.235 ms - 387[0m

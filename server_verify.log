@@ -1,0 +1,55 @@
+
+> secureguard-pro-backend@1.0.0 start
+> pm2 start ecosystem.config.js --env production
+
+
+                        -------------
+
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+        _\///______________\///______________\///__\///////////////__
+
+
+                          Runtime Edition
+
+        PM2 is a Production Process Manager for Node.js applications
+                     with a built-in Load Balancer.
+
+                Start and Daemonize any application:
+                $ pm2 start app.js
+
+                Load Balance 4 instances of api.js:
+                $ pm2 start api.js -i 4
+
+                Monitor in production:
+                $ pm2 monitor
+
+                Make pm2 auto-boot at server restart:
+                $ pm2 startup
+
+                To go further checkout:
+                http://pm2.io/
+
+
+                        -------------
+
+[PM2] Spawning PM2 daemon with pm2_home=/home/jules/.pm2
+[PM2] PM2 Successfully daemonized
+[PM2][WARN] Applications secureguard-pro not running, starting...
+[PM2] This PM2 is not UP TO DATE
+[PM2] Upgrade to version 6.0.14
+[PM2] App [secureguard-pro] launched (4 instances)
+┌────┬────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name               │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ secureguard-pro    │ default     │ 1.0.0   │ cluster │ 42881    │ 0s     │ 0    │ online    │ 0%       │ 64.3mb   │ jules    │ disabled │
+│ 1  │ secureguard-pro    │ default     │ 1.0.0   │ cluster │ 42888    │ 0s     │ 0    │ online    │ 0%       │ 64.5mb   │ jules    │ disabled │
+│ 2  │ secureguard-pro    │ default     │ 1.0.0   │ cluster │ 42895    │ 0s     │ 0    │ online    │ 0%       │ 62.4mb   │ jules    │ disabled │
+│ 3  │ secureguard-pro    │ default     │ 1.0.0   │ cluster │ 42908    │ 0s     │ 0    │ online    │ 0%       │ 57.5mb   │ jules    │ disabled │
+└────┴────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘

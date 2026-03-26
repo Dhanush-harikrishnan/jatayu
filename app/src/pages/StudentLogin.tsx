@@ -21,7 +21,7 @@ export function StudentLogin() {
     try {
       const response = await fetchApi('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ userId: email, examId: 'EXAM-101' }), // Mocking examId for now
+        body: JSON.stringify({ userId: email, password, examId: 'EXAM-101' }), // Mocking examId for now
       });
 
       if (response.success && response.data?.token) {
