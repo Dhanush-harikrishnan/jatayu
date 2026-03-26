@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureGuard Pro - Health Dashboard</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        }
+        h1 {
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 16px;
+            margin-top: 0;
+            color: #58a6ff;
+        }
+        .status-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            padding: 24px;
+            border-radius: 6px;
+            margin-top: 24px;
+        }
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+        .status-row:last-child {
+            margin-bottom: 0;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .loading {
+            background-color: #388bfd33;
+            color: #58a6ff;
+            border: 1px solid #388bfd;
+        }
+        .success {
+            background-color: #2ea04333;
+            color: #3fb950;
+            border: 1px solid #2ea043;
+        }
+        .error {
+            background-color: #f8514933;
+            color: #ff7b72;
+            border: 1px solid #f85149;
+        }
+        button {
+            margin-top: 20px;
+            background-color: #238636;
+            color: #ffffff;
+            border: 1px solid rgba(240,246,252,0.1);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #2ea043;
+            border-color: rgba(240,246,252,0.1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SecureGuard Pro Status</h1>
+    <p>This page validates the connectivity of your backend to core services.</p>
+    
+    <div class="status-box">
+        <div class="status-row">
+            <span>Backend Server</span>
+            <span id="backend-status" class="badge loading">Checking...</span>
+        </div>
+        <div class="status-row">
+            <span>DynamoDB Connection</span>
+            <span id="db-status" class="badge loading">Checking...</span>
+        </div>
+    </div>
+    <button onclick="checkHealth()">Refresh Status</button>
+</div>
+
+<script>
+    async function checkHealth() {
+        const backendEl = document.getElementById('backend-status');
+        const dbEl = document.getElementById('db-status');
+
+        backendEl.className = 'badge loading';
+        backendEl.innerText = 'Checking...';
+        dbEl.className = 'badge loading';
+        dbEl.innerText = 'Checking...';
+
+        try {
+            // Check Server Health
+            const resServer = await fetch('/health');
+            if (resServer.ok) {
+                backendEl.className = 'badge success';
+                backendEl.innerText = 'Online';
+            } else {
+                throw new Error('Server error');
+            }
+
+            // Check DB Health
+            const resDb = await fetch('/health/db');
+            if (resDb.ok) {
+                dbEl.className = 'badge success';
+                dbEl.innerText = 'Connected';
+            } else {
+                dbEl.className = 'badge error';
+                dbEl.innerText = 'Disconnected / AWS Error';
+            }
+        } catch (error) {
+            backendEl.className = 'badge error';
+            backendEl.innerText = 'Offline';
+            dbEl.className = 'badge error';
+            dbEl.innerText = 'Unreachable';
+        }
+    }
+
+    // Run on load
+    window.onload = checkHealth;
+</script>
+
+</body>
+</html>
