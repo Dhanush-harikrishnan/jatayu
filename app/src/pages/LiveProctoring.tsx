@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { cn, getViolationDescription } from '@/lib/utils';
 import { useSimulatedTelemetry, useSimulatedViolations } from '@/hooks/useSocket';
+import { fetchApi } from '@/lib/api';
 
 interface LiveProctoringProps {
   examId?: string;
@@ -52,6 +53,64 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
       })
       .catch(console.error);
   }, []);
+
+  // Continuous Monitoring (Phone/Person)
+  useEffect(() => {
+    const captureAndAnalyze = async () => {
+      if (!videoRef.current) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        try {
+          // 1. Get presigned URL
+          const presignedRes = await fetchApi(`/exam/${examId}/presigned-url`, {
+            method: 'POST',
+            body: JSON.stringify({ filename: 'frame.jpg' })
+          });
+
+          if (presignedRes.success && presignedRes.url) {
+            // 2. Upload to S3
+            await fetch(presignedRes.url, {
+              method: 'PUT',
+              body: blob,
+              headers: {
+                'Content-Type': 'image/jpeg'
+              }
+            });
+
+            // 3. Request Analysis
+            const analyzeRes = await fetchApi(`/exam/${examId}/analyze-frame`, {
+              method: 'POST',
+              body: JSON.stringify({ s3Key: presignedRes.s3Key })
+            });
+
+            if (analyzeRes.violationDetected) {
+              addToast({
+                id: Date.now().toString(),
+                type: 'error',
+                title: 'Security Violation Detected',
+                message: analyzeRes.violationType
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Frame analysis failed:', err);
+        }
+      }, 'image/jpeg', 0.8);
+    };
+
+    const interval = setInterval(captureAndAnalyze, 10000); // 10 seconds
+    return () => clearInterval(interval);
+  }, [examId]);
 
   // Handle violations - show toasts
   useEffect(() => {

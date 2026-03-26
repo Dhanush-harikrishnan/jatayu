@@ -1,5 +1,6 @@
-import { RekognitionClient, DetectFacesCommand, DetectLabelsCommand } from '@aws-sdk/client-rekognition';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { RekognitionClient, DetectFacesCommand, DetectLabelsCommand, CreateFaceLivenessSessionCommand, GetFaceLivenessSessionResultsCommand } from '@aws-sdk/client-rekognition';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { DynamoDBClient, PutItemCommand, ListTablesCommand } from '@aws-sdk/client-dynamodb';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { config } from '../config/env';
@@ -64,6 +65,63 @@ export const awsService = {
     });
     await s3Client.send(command);
     return `s3://${config.aws.s3Bucket}/${key}`;
+  },
+
+  generatePresignedUrl: async (s3Key: string): Promise<string> => {
+    const command = new PutObjectCommand({
+      Bucket: config.aws.s3Bucket,
+      Key: s3Key,
+    });
+    return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  },
+
+  detectLabelsFromS3: async (s3Key: string) => {
+    const command = new DetectLabelsCommand({
+      Image: {
+        S3Object: {
+          Bucket: config.aws.s3Bucket,
+          Name: s3Key,
+        },
+      },
+      MaxLabels: 10,
+      MinConfidence: 80,
+    });
+    return await rekognitionClient.send(command);
+  },
+
+  detectFacesFromS3: async (s3Key: string) => {
+    const command = new DetectFacesCommand({
+      Image: {
+        S3Object: {
+          Bucket: config.aws.s3Bucket,
+          Name: s3Key,
+        },
+      },
+      Attributes: ['ALL'],
+    });
+    return await rekognitionClient.send(command);
+  },
+
+  createFaceLivenessSession: async (): Promise<string> => {
+    try {
+      const command = new CreateFaceLivenessSessionCommand({});
+      const response = await rekognitionClient.send(command);
+      return response.SessionId!;
+    } catch (err) {
+      logger.error('Failed to create face liveness session', err);
+      throw err;
+    }
+  },
+
+  getFaceLivenessSessionResult: async (sessionId: string): Promise<number | undefined> => {
+    try {
+      const command = new GetFaceLivenessSessionResultsCommand({ SessionId: sessionId });
+      const response = await rekognitionClient.send(command);
+      return response.Confidence;
+    } catch (err) {
+      logger.error('Failed to get face liveness session result', err);
+      throw err;
+    }
   },
 
   logViolationEvent: async (sessionId: string, timestamp: string, violationType: string, s3Key: string) => {
