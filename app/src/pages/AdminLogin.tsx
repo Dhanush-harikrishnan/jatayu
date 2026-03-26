@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, AlertCircle, Shield, User } from 'lucide-react';
 import { AuthLayout } from '@/components/layouts/AuthLayout';
 import { cn } from '@/lib/utils';
+import { fetchApi } from '@/lib/api';
 
 export function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -19,16 +20,24 @@ export function AdminLogin() {
     setError(null);
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // For Admin, we still hit the same mock endpoint for demo
+      const response = await fetchApi('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ userId: email, examId: 'ADMIN-PORTAL' }),
+      });
 
-    if (email.includes('admin') && password.length >= 6) {
-      setRequires2FA(true);
-    } else {
-      setError('Invalid credentials. Please try again.');
+      if (response.success && response.data?.token) {
+        localStorage.setItem('adminToken', response.data.token);
+        setRequires2FA(true);
+      } else {
+        setError('Invalid credentials. Please try again.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const handle2FASubmit = async (e: React.FormEvent) => {

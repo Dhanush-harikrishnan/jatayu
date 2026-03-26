@@ -23,6 +23,7 @@ export const configureApp = (): Application => {
 
   // Health check
   app.get('/health', (req: Request, res: Response) => res.status(200).json({ status: 'ok' }));
+  app.get('/api/health', (req: Request, res: Response) => res.status(200).json({ status: 'ok' }));
 
   app.get('/health/db', async (req: Request, res: Response) => {
     const isDbConnected = await awsService.checkDatabaseConnection();

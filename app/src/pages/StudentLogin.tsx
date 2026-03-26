@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '@/components/layouts/AuthLayout';
 import { cn } from '@/lib/utils';
+import { fetchApi } from '@/lib/api';
 
 export function StudentLogin() {
   const [email, setEmail] = useState('');
@@ -17,19 +18,27 @@ export function StudentLogin() {
     setError(null);
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await fetchApi('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ userId: email, examId: 'EXAM-101' }), // Mocking examId for now
+      });
 
-    if (email && password.length >= 6) {
-      setSuccess(true);
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1000);
-    } else {
-      setError('Invalid email or password. Please try again.');
+      if (response.success && response.data?.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('sessionId', response.data.sessionId);
+        setSuccess(true);
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
+      } else {
+        setError('Invalid email or password. Please try again.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (

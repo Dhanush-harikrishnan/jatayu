@@ -7,6 +7,7 @@ import {
   Volume2, Maximize, ArrowRight
 } from 'lucide-react';
 import { cn, generatePairingCode } from '@/lib/utils';
+import { fetchApi } from '@/lib/api';
 
 interface ExamLaunchProps {
   examId?: string;
@@ -34,15 +35,30 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     setPairingCode(generatePairingCode());
   }, []);
 
-  // Simulate mobile pairing
+  // Connect backend pairing
   useEffect(() => {
     if (currentStep === 1 && !isPaired) {
+      // Attempt backend pairing
+      const pairDevice = async () => {
+        try {
+          // Sending an email to a mock address to trigger backend API.
+          await fetchApi(`/exam/${examId}/pair`, {
+            method: 'POST',
+            body: JSON.stringify({ email: 'student@university.edu' }),
+          });
+        } catch (err) {
+          console.error("Pairing API error:", err);
+        }
+      };
+
+      pairDevice();
+
       const timer = setTimeout(() => {
         setIsPaired(true);
       }, 8000);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, isPaired]);
+  }, [currentStep, isPaired, examId]);
 
   // Request camera permission
   useEffect(() => {
