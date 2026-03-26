@@ -20,14 +20,17 @@ export function MobileCamera({ pairingCode = 'ABC123' }: MobileCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Simulate connection
+  // Connect and start camera
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsConnected(true);
-      startCamera();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    // If a pairingCode is present, we attempt to "connect". In a real setup, we'd establish a WebSocket connection.
+    if (pairingCode) {
+      const timer = setTimeout(() => {
+        setIsConnected(true);
+        startCamera();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [pairingCode]);
 
   // Gyroscope simulation
   useEffect(() => {

@@ -63,6 +63,36 @@ export const analyzeFrame = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+import { generatePdfReport } from '../services/pdfService';
+
+export const sendExamReport = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { examId, sessionId } = req.params;
+    const { email, violations } = req.body;
+
+    // Create the PDF buffer
+    const pdfBuffer = await generatePdfReport({
+      examId,
+      sessionId,
+      studentEmail: email,
+      violations: violations || []
+    });
+
+    // Send the email with the PDF attached
+    const adminEmail = process.env.ADMIN_EMAIL || email;
+    await awsService.sendPdfReportEmail(
+      adminEmail,
+      pdfBuffer,
+      `Exam Report - ${examId} - ${email}`,
+      `Please find attached the proctoring report for session ${sessionId}.`
+    );
+
+    res.json({ success: true, message: 'PDF Report sent successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createLivenessSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = await awsService.createFaceLivenessSession();
