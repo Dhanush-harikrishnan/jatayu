@@ -78,6 +78,15 @@ export interface ViolationMetadata {
     width: number;
     height: number;
   };
+  faceDetails?: {
+    confidence: number;
+    emotions: { type: string; confidence: number }[];
+    eyeGaze: { yaw: number; pitch: number };
+    sunglasses: { value: boolean; confidence: number };
+    eyeglasses: { value: boolean; confidence: number };
+  }[];
+  labels?: { name: string; confidence: number }[];
+  moderation?: any[];
   rekognitionData?: {
     faceDetails: any[];
     labels: any[];

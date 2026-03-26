@@ -81,9 +81,9 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
     setShowTerminateConfirm(false);
   };
 
-  const rekogData = selectedViolation?.metadata?.faceDetails?.length 
+  const rekogData = (selectedViolation?.metadata?.faceDetails?.length 
     ? selectedViolation.metadata 
-    : mockRekognitionData;
+    : mockRekognitionData) as any;
 
   return (
     <AnimatePresence>
@@ -504,7 +504,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                         <div>
                           <span className="text-sm text-text-secondary">Detected Emotions</span>
                           <div className="mt-2 space-y-2">
-                            {rekogData.faceDetails[0].emotions.map((emotion) => (
+                            {rekogData.faceDetails[0].emotions.map((emotion: any) => (
                               <div key={emotion.type} className="flex items-center justify-between">
                                 <span className="text-sm text-white">{emotion.type}</span>
                                 <span className="text-sm text-cyan">{emotion.confidence}%</span>
@@ -558,7 +558,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                       </h3>
                       
                       <div className="space-y-3">
-                        {rekogData.labels.map((label) => (
+                        {rekogData.labels.map((label: any) => (
                           <div key={label.name} className="flex items-center justify-between p-2 rounded bg-white/5">
                             <span className="text-sm text-white">{label.name}</span>
                             <div className="flex items-center gap-2">
@@ -578,7 +578,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                       <div className="mt-6">
                         <h4 className="text-sm text-text-secondary mb-3">Content Moderation</h4>
                         <div className="space-y-2">
-                          {rekogData.moderation.map((item) => (
+                          {rekogData.moderation.map((item: any) => (
                             <div key={item.name} className="flex items-center justify-between p-2 rounded bg-white/5">
                               <span className="text-sm text-white">{item.name}</span>
                               <span className={cn(
