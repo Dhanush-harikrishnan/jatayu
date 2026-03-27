@@ -54,7 +54,19 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
       } else if (role === 'secondary_camera') {
         // Mobile camera -> Detect Labels
         const res = await awsService.detectLabels(buffer);
-        const hasLaptopScreen = res.Labels?.some(l => l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor') || false;
+        const labels = res.Labels || [];
+        const hasLaptopScreen = labels.some(l => l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor');
+        // Phone detection: fire into correlation engine so it is persisted to DynamoDB
+        const phoneLabel = labels.find(l =>
+          l.Name === 'Cell Phone' || l.Name === 'Mobile Phone' || l.Name === 'Phone' || l.Name === 'Smartphone'
+        );
+        if (phoneLabel) {
+          engine.addEvent({
+            type: 'PHONE_DETECTED' as any,
+            timestamp: data.timestamp,
+            data: { label: phoneLabel.Name, confidence: phoneLabel.Confidence },
+          });
+        }
         engine.addEvent({
           type: 'MOBILE_FRAME',
           timestamp: data.timestamp,

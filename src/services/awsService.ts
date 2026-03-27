@@ -217,10 +217,12 @@ export const awsService = {
     metadata?: any,
     context?: { userId?: string; studentName?: string; examId?: string }
   ) => {
+    // Use a unique EventTime (with ms suffix) to avoid overwriting events at the same millisecond.
+    // Matches table schema: SessionId (PK) + EventTime (SK).
+    const uniqueEventTime = `${timestamp.replace(/Z$/, '')}.${Date.now() % 1000}Z`;
     const item: any = {
       SessionId: { S: sessionId },
-      'EventTime#ViolationType': { S: `${timestamp}#${violationType}` },
-      EventTime: { S: timestamp },
+      EventTime: { S: uniqueEventTime },
       ViolationType: { S: violationType },
       EvidenceKey: { S: s3Key },
     };

@@ -4,7 +4,7 @@ import { io } from '../socket';
 import { awsService } from './awsService';
 
 export interface TelemetryEvent {
-  type: 'LAPTOP_FRAME' | 'MOBILE_FRAME' | 'KEYSTROKE' | 'TRANSCRIPT' | 'GYRO_MOTION';
+  type: 'LAPTOP_FRAME' | 'MOBILE_FRAME' | 'KEYSTROKE' | 'TRANSCRIPT' | 'GYRO_MOTION' | 'PHONE_DETECTED';
   timestamp: number;
   data: any;
   // Optional reference to an evidence image already stored in S3.
@@ -19,6 +19,9 @@ export class CorrelationEngine {
   private lastPrimaryEvidenceKey?: string;
   private lastPrimaryMetadata?: any;
   private context?: { userId?: string; studentName?: string; examId?: string };
+  // Cooldown map: violationType -> last triggered epoch ms
+  private violationCooldowns = new Map<string, number>();
+  private readonly COOLDOWN_MS = 8000; // min 8 s between same violation type
 
   private constructor(
     sessionId: string,
@@ -72,56 +75,85 @@ export class CorrelationEngine {
   private evaluateRules() {
     const now = Date.now();
     const windowEvents = this.events.filter(e => now - e.timestamp <= this.windowMs);
-
-    // Rule 1: OFF_SCREEN_TYPING
-    // Triggered if we get keystroke events but primary camera sees NO faces
-    const keystrokesInWindow = windowEvents.filter(e => e.type === 'KEYSTROKE');
     const recentFrames = windowEvents.filter(e => e.type === 'LAPTOP_FRAME');
-    
-    if (keystrokesInWindow.length > 0 && recentFrames.length > 0) {
-      const facesCount = recentFrames[recentFrames.length - 1].data.faceCount;
-      if (facesCount === 0) {
-        this.triggerCriticalViolation('copy_paste_attempt');
+    const latestFrame = recentFrames.length > 0 ? recentFrames[recentFrames.length - 1] : null;
+
+    if (latestFrame) {
+      const faceCount: number = latestFrame.data.faceCount ?? 0;
+      const faceDetails: any[] = latestFrame.data.rekognitionMetadata?.faceDetails ?? [];
+      const primaryFace = faceDetails[0];
+
+      // Rule A: MULTIPLE_PERSONS_DETECTED
+      if (faceCount > 1) {
+        this.triggerCriticalViolation('MULTIPLE_PERSONS_DETECTED');
+      }
+
+      // Rule B: FACE_NOT_DETECTED
+      if (faceCount === 0) {
+        this.triggerCriticalViolation('FACE_NOT_DETECTED');
+      }
+
+      // Rule C: LOOKING_AWAY (head pose yaw or pitch exceeds threshold)
+      if (primaryFace) {
+        const yaw = Math.abs(primaryFace.eyeGaze?.yaw ?? 0);
+        const pitch = Math.abs(primaryFace.eyeGaze?.pitch ?? 0);
+        const orientationThreshold = config.thresholds.facialOrientation ?? 25;
+        if (yaw > orientationThreshold || pitch > orientationThreshold) {
+          this.triggerCriticalViolation('LOOKING_AWAY');
+        }
       }
     }
 
-    // Rule 2: SUSPECTED_TRANSCRIPTION (e.g., someone whispering an answer)
-    // Audio transcript contains keywords while mobile frame doesn't see laptop screen properly
+    // Rule D: OFF_SCREEN_TYPING (keystrokes while no face seen)
+    const keystrokesInWindow = windowEvents.filter(e => e.type === 'KEYSTROKE');
+    if (keystrokesInWindow.length > 0 && latestFrame) {
+      const facesCount = latestFrame.data.faceCount ?? 0;
+      if (facesCount === 0) {
+        this.triggerCriticalViolation('OFF_SCREEN_TYPING');
+      }
+    }
+
+    // Rule E: SUSPECTED_TRANSCRIPTION
     const transcripts = windowEvents.filter(e => e.type === 'TRANSCRIPT');
-    const mobileFrames = windowEvents.filter(e => e.type === 'MOBILE_FRAME');
-    
     if (transcripts.length > 0) {
       const text = transcripts[transcripts.length - 1].data.text.toLowerCase();
       const suspiciousWords = ['help', 'answer', 'what is', 'tell me'];
-      const hasSuspiciousText = suspiciousWords.some(w => text.includes(w));
-      
-      if (hasSuspiciousText) {
-        this.triggerCriticalViolation('voice_detected');
+      if (suspiciousWords.some(w => text.includes(w))) {
+        this.triggerCriticalViolation('SUSPECTED_TRANSCRIPTION');
       }
     }
 
-    // Rule 3: PHONE_MOVEMENT
-    // High gyro deviation detected
+    // Rule F: PHONE_MOVEMENT_DETECTED (gyro)
     const gyroEvents = windowEvents.filter(e => e.type === 'GYRO_MOTION');
     if (gyroEvents.length > 0) {
-      this.triggerCriticalViolation('gyro_movement');
+      this.triggerCriticalViolation('PHONE_MOVEMENT_DETECTED');
+    }
+
+    // Rule G: PHONE_DETECTED (label from mobile camera)
+    const phoneEvents = windowEvents.filter(e => e.type === 'PHONE_DETECTED');
+    if (phoneEvents.length > 0) {
+      this.triggerCriticalViolation('PHONE_DETECTED');
     }
   }
 
   private async triggerCriticalViolation(violationType: string) {
+    // Cooldown check — avoid spamming the same violation type
+    const lastTriggered = this.violationCooldowns.get(violationType) ?? 0;
+    if (Date.now() - lastTriggered < this.COOLDOWN_MS) return;
+    this.violationCooldowns.set(violationType, Date.now());
+
     logger.warn(`[Violation] ${violationType} in session ${this.sessionId}`);
 
     const isoTimestamp = new Date().toISOString();
-    const s3Key = this.lastPrimaryEvidenceKey;
+    // Use the last known evidence key; fall back to a placeholder so the event still persists.
+    const s3Key = this.lastPrimaryEvidenceKey || `evidence/${this.sessionId}/no-evidence/${Date.now()}.jpg`;
 
-    if (!s3Key) {
+    if (!this.lastPrimaryEvidenceKey) {
       logger.warn(
-        `[Violation] Evidence missing for ${violationType} in session ${this.sessionId}. ` +
-          `Make sure websocket primary frames upload evidence to S3.`
+        `[Violation] No evidence uploaded yet for ${violationType} in session ${this.sessionId}. Logging without snapshot.`
       );
-      return;
     }
-    
+
     try {
       await awsService.logViolationEvent(
         this.sessionId,
@@ -131,6 +163,7 @@ export class CorrelationEngine {
         this.lastPrimaryMetadata,
         this.context
       );
+      logger.info(`[Violation] Logged to DynamoDB: ${violationType} session=${this.sessionId}`);
     } catch (e) {
       logger.error('DynamoDB Logging failed:', e);
     }
