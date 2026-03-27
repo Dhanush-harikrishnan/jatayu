@@ -6,6 +6,7 @@ import { registerWebRTCHandlers } from './webrtcHandler';
 import { registerTelemetryHandlers } from './telemetryHandler';
 import { CorrelationEngine } from '../services/correlationEngine';
 import { sessionRegistry } from '../services/sessionRegistry';
+import { awsService } from '../services/awsService';
 import { config } from '../config/env';
 
 export let io: SocketIOServer;
@@ -71,6 +72,19 @@ export const initializeSocketServer = (server: HttpServer) => {
 
     registerWebRTCHandlers(io, socket, roomName);
     registerTelemetryHandlers(io, socket, roomName, engine);
+
+    // Log a SESSION_STARTED event so the admin dashboard shows this student even without violations
+    if (role === 'primary') {
+      const ctx = { userId: decoded.userId, studentName: (decoded as any).name, examId: decoded.examId };
+      awsService.logViolationEvent(
+        sessionId,
+        new Date().toISOString(),
+        'SESSION_STARTED',
+        '',
+        { confidence: 1 },
+        ctx
+      ).catch((err: any) => logger.error('Failed to log session start to DynamoDB:', err));
+    }
 
     // Listen for mobile-paired event and broadcast to the room
     socket.on('mobile-paired', (data: any) => {

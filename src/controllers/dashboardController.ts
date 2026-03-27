@@ -167,7 +167,7 @@ export const getAdminStudents = async (req: Request, res: Response, next: NextFu
         existing.lastTime = Math.max(existing.lastTime, t);
       }
 
-      bySession.get(sessionId)!.violationCount += 1;
+      bySession.get(sessionId)!.violationCount += (item.ViolationType?.S && item.ViolationType.S !== 'SESSION_STARTED') ? 1 : 0;
     }
 
     const students = Array.from(bySession.values()).map(s => ({
@@ -216,7 +216,7 @@ export const getAdminViolations = async (req: Request, res: Response, next: Next
     const normalized = (result.Items || [])
       .filter((item: any) => {
         const vt = item.ViolationType?.S;
-        return vt && vt !== 'undefined' && vt !== 'TEST_VIOLATION';
+        return vt && vt !== 'undefined' && vt !== 'TEST_VIOLATION' && vt !== 'SESSION_STARTED';
       })
       .map((item: any) => {
         const rawType: string = item.ViolationType?.S;

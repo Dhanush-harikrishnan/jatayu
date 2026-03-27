@@ -47,9 +47,13 @@ export const analyzeFrame = async (req: Request, res: Response, next: NextFuncti
        return res.status(403).json({ success: false, message: 'Exam ID mismatch' });
     }
 
+    // Download the image bytes from S3 and send them directly to Rekognition
+    // (S3 is in ap-south-2 but Rekognition is in ap-south-1, so S3Object refs fail cross-region)
+    const imageBytes = await awsService.getEvidenceObjectBytes(s3Key);
+
     const [labelsRes, facesRes] = await Promise.all([
-      awsService.detectLabelsFromS3(s3Key),
-      awsService.detectFacesFromS3(s3Key)
+      awsService.detectLabels(imageBytes),
+      awsService.detectFaces(imageBytes)
     ]);
 
     const hasPhone = labelsRes.Labels?.some(l => 
@@ -344,8 +348,9 @@ export const sendExamReport = async (req: Request, res: Response, next: NextFunc
     const { email, violations } = req.body;
 
     const dbViolations = await awsService.getViolationsBySessionId(sessionId).catch(() => []);
-    const sourceViolations = dbViolations.length > 0
-      ? dbViolations.map((v: any) => ({
+    const filteredDbViolations = dbViolations.filter((v: any) => v.violationType && v.violationType !== 'SESSION_STARTED');
+    const sourceViolations = filteredDbViolations.length > 0
+      ? filteredDbViolations.map((v: any) => ({
           type: v.violationType || 'unknown',
           timestamp: v.timestamp || new Date().toISOString(),
           evidence: v.evidenceKey,
