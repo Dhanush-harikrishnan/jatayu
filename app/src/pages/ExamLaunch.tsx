@@ -185,6 +185,14 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     }
   }, [currentStep, cameraPermission]);
 
+  // Release camera lock when leaving the verification step so Liveness check can use it
+  useEffect(() => {
+    if (currentStep !== 2 && mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      setMediaStream(null);
+    }
+  }, [currentStep, mediaStream]);
+
   // Attach stream to video element when it mounts
   useEffect(() => {
     if (videoRef.current && mediaStream && currentStep === 2) {
