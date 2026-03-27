@@ -397,7 +397,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan/10">
-              <Shield className="h-5 w-5 text-cyan" />
+              <Shield strokeWidth={1} className="h-5 w-5 text-cyan" />
             </div>
             <div>
               <h1 className="font-sora text-sm font-semibold text-white">Introduction to Computer Science</h1>
@@ -408,7 +408,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
           {/* Center Timer */}
           <div className="flex items-center gap-4">
             <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border", sessionTime <= 300 ? "bg-violation/10 border-violation/30" : "bg-white/5 border-white/10")}>
-              <Clock className={cn("h-4 w-4", sessionTime <= 300 ? "text-violation animate-pulse" : "text-cyan")} />
+              <Clock strokeWidth={1} className={cn("h-4 w-4", sessionTime <= 300 ? "text-violation animate-pulse" : "text-cyan")} />
               <span className={cn("font-mono text-lg font-semibold", sessionTime <= 300 ? "text-violation animate-pulse" : "text-white")}>
                 {formatSessionTime(sessionTime)}
               </span>
@@ -423,17 +423,17 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
               disabled={requireFullscreen}
               className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isFullscreen ? <Minimize2 strokeWidth={1} className="h-4 w-4" /> : <Maximize2 strokeWidth={1} className="h-4 w-4" />}
             </button>
             <button
               onClick={handleEndExam}
               disabled={isSubmitting}
               className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors shadow-[0_0_15px_rgba(46,204,113,0.3)]",
-                  isSubmitting ? "bg-success/50 text-navy-900/50" : "bg-success text-navy-900 hover:bg-success-light"
+                  isSubmitting ? "bg-white/20/50 text-navy-900/50" : "bg-white/20 text-navy-900 hover:bg-white/20-light"
               )}
             >
-              <CheckCircle className="h-4 w-4" />
+              <CheckCircle strokeWidth={1} className="h-4 w-4" />
               <span>{isSubmitting ? 'Submitting...' : 'Finish Exam'}</span>
             </button>
           </div>
@@ -473,7 +473,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                         <div key={idx} className={cn(
                             "w-8 h-2 rounded-full transition-colors",
                             idx === currentQuestionIdx ? "bg-cyan" : 
-                            answers[idx] !== undefined ? "bg-success/60" : "bg-white/10"
+                            answers[idx] !== undefined ? "bg-white/20/60" : "bg-white/10"
                         )} />
                     ))}
                 </div>
@@ -524,7 +524,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                 ) : (
                     <button
                         onClick={handleEndExam}
-                        className="px-6 py-2.5 rounded-lg bg-success text-navy-900 font-bold hover:bg-success-light shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-colors"
+                        className="px-6 py-2.5 rounded-lg bg-white/20 text-navy-900 font-bold hover:bg-white/20-light shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-colors"
                     >
                         Review & Submit
                     </button>
@@ -559,12 +559,12 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
           <div className="w-full aspect-video rounded-xl overflow-hidden bg-navy-800 border border-white/10 relative">
              <div className="absolute inset-0 bg-gradient-to-br from-navy-700 to-navy-800 flex items-center justify-center">
                 <div className="text-center grayscale opacity-50">
-                    <Smartphone className="h-8 w-8 text-white/40 mx-auto mb-2" />
+                    <Smartphone strokeWidth={1} className="h-8 w-8 text-white/40 mx-auto mb-2" />
                     <p className="text-xs text-white/60">Secondary Camera Active</p>
                 </div>
              </div>
              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80">
-                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-white/20 animate-pulse" />
                 <span className="text-[10px] text-white/80 uppercase">iPhone 13</span>
             </div>
           </div>
@@ -585,14 +585,14 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                 'flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg min-w-[320px] max-w-md',
                 toast.type === 'error' && 'bg-violation/90 text-white',
                 toast.type === 'warning' && 'bg-warning/90 text-navy-900',
-                toast.type === 'success' && 'bg-success/90 text-navy-900',
+                toast.type === 'success' && 'bg-white/20/90 text-navy-900',
                 toast.type === 'info' && 'bg-cyan/90 text-navy-900'
               )}
             >
-              {toast.type === 'error' && <AlertTriangle className="h-5 w-5 flex-shrink-0" />}
-              {toast.type === 'warning' && <AlertTriangle className="h-5 w-5 flex-shrink-0" />}
-              {toast.type === 'success' && <CheckCircle className="h-5 w-5 flex-shrink-0" />}
-              {toast.type === 'info' && <AlertTriangle className="h-5 w-5 flex-shrink-0" />}
+              {toast.type === 'error' && <AlertTriangle strokeWidth={1} className="h-5 w-5 flex-shrink-0" />}
+              {toast.type === 'warning' && <AlertTriangle strokeWidth={1} className="h-5 w-5 flex-shrink-0" />}
+              {toast.type === 'success' && <CheckCircle strokeWidth={1} className="h-5 w-5 flex-shrink-0" />}
+              {toast.type === 'info' && <AlertTriangle strokeWidth={1} className="h-5 w-5 flex-shrink-0" />}
               
               <div className="flex-1">
                 <p className="font-medium text-sm">{toast.title}</p>
@@ -605,7 +605,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                 onClick={() => removeToast(toast.id)}
                 className="text-current opacity-60 hover:opacity-100"
               >
-                <X className="h-4 w-4" />
+                <X strokeWidth={1} className="h-4 w-4" />
               </button>
             </motion.div>
           ))}
@@ -629,7 +629,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
               <div className="absolute top-0 left-0 right-0 h-1 bg-violation" />
               <div className="flex flex-col items-center text-center">
                 <div className="h-20 w-20 rounded-full bg-violation/10 flex items-center justify-center animate-pulse mb-6">
-                  <AlertTriangle className="h-10 w-10 text-violation" />
+                  <AlertTriangle strokeWidth={1} className="h-10 w-10 text-violation" />
                 </div>
                 
                 <h3 className="font-sora text-3xl font-bold text-white mb-2">Automated Alert</h3>
@@ -670,14 +670,14 @@ function TelemetryBadge({ icon: Icon, label, value, status }: TelemetryBadgeProp
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 flex-shrink-0">
       <Icon className={cn(
         'h-3.5 w-3.5',
-        status === 'good' ? 'text-success' : 
+        status === 'good' ? 'text-white/60' :
         status === 'warning' ? 'text-warning' : 
         'text-violation'
       )} />
       <span className="text-xs text-white/60">{label}:</span>
       <span className={cn(
         'text-xs font-medium',
-        status === 'good' ? 'text-success' : 
+        status === 'good' ? 'text-white/60' :
         status === 'warning' ? 'text-warning' : 
         'text-violation'
       )}>{value}</span>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,34 +6,43 @@
 
 @layer base {
   :root {
-    --background: 216 55% 10%;
-    --foreground: 225 60% 97%;
-    --card: 216 50% 12%;
-    --card-foreground: 225 60% 97%;
-    --popover: 216 50% 12%;
-    --popover-foreground: 225 60% 97%;
-    --primary: 183 100% 50%;
-    --primary-foreground: 216 55% 10%;
-    --secondary: 216 40% 16%;
-    --secondary-foreground: 225 60% 97%;
-    --muted: 216 40% 16%;
-    --muted-foreground: 220 25% 68%;
-    --accent: 183 100% 50%;
-    --accent-foreground: 216 55% 10%;
-    --destructive: 350 100% 50%;
+    --background: 0 0% 9%; /* #161616 Carbon 100 */
+    --foreground: 0 0% 96%; /* #f4f4f4 Carbon 10 */
+
+    --card: 0 0% 15%; /* #262626 Carbon 90 */
+    --card-foreground: 0 0% 96%;
+
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 96%;
+
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 22%; /* #393939 Carbon 80 */
+    --secondary-foreground: 0 0% 96%;
+
+    --muted: 0 0% 22%;
+    --muted-foreground: 0 0% 66%; /* Carbon 40 */
+
+    --accent: 0 0% 22%;
+    --accent-foreground: 0 0% 96%;
+
+    --destructive: 357 75% 48%; /* #da1e28 Red 60 */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 30% 20%;
-    --input: 220 30% 20%;
-    --ring: 183 100% 50%;
-    --radius: 0.625rem;
-    --sidebar-background: 216 55% 10%;
-    --sidebar-foreground: 225 60% 97%;
-    --sidebar-primary: 183 100% 50%;
-    --sidebar-primary-foreground: 216 55% 10%;
-    --sidebar-accent: 216 40% 16%;
-    --sidebar-accent-foreground: 225 60% 97%;
-    --sidebar-border: 220 30% 20%;
-    --sidebar-ring: 183 100% 50%;
+
+    --border: 0 0% 22%; /* Carbon 80 */
+    --input: 0 0% 22%;
+    --ring: 0 0% 96%;
+    --radius: 0px; /* Sharp corners */
+
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 0 0% 96%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 22%;
+    --sidebar-ring: 0 0% 96%;
   }
 }
 
@@ -47,13 +56,12 @@
   }
   
   body {
-    @apply bg-navy-900 text-foreground font-inter antialiased;
-    background-color: #0A1428;
+    @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sora font-semibold tracking-tight;
+    @apply font-sans font-semibold tracking-tight;
   }
   
   code, pre {
@@ -62,56 +70,44 @@
 }
 
 @layer components {
-  .glass-card {
-    @apply relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  /* Replace glowing cards with sharp, border-only containers */
+  .glass-card, .glass-panel {
+    @apply relative border border-border bg-card text-foreground rounded-none;
+    box-shadow: none;
   }
   
-  .glass-panel {
-    @apply relative rounded-xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-lg;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-  
-  .glow-cyan {
-    box-shadow: 0 0 40px rgba(0, 240, 255, 0.12);
-  }
-  
-  .glow-cyan-strong {
-    box-shadow: 0 0 60px rgba(0, 240, 255, 0.25);
-  }
-  
-  .glow-violation {
-    box-shadow: 0 0 40px rgba(255, 0, 51, 0.25);
+  .glow-cyan, .glow-cyan-strong, .glow-violation {
+    box-shadow: none !important;
   }
   
   .text-gradient-cyan {
-    @apply bg-gradient-to-r from-cyan to-cyan-light bg-clip-text text-transparent;
+    @apply text-foreground bg-none bg-clip-border bg-transparent;
   }
   
+  /* Update buttons */
   .btn-primary {
-    @apply relative overflow-hidden rounded-xl bg-cyan px-6 py-3 font-sora font-semibold text-navy-900 transition-all duration-300;
+    @apply relative flex items-center justify-center border border-transparent bg-foreground px-6 py-3 font-sans font-semibold text-background transition-all duration-150 rounded-none;
   }
   
   .btn-primary:hover {
-    @apply bg-cyan-light;
-    box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+    @apply bg-background border-foreground text-foreground;
   }
   
   .btn-outline {
-    @apply relative rounded-xl border border-cyan/50 px-6 py-3 font-sora font-semibold text-cyan transition-all duration-300;
+    @apply relative flex items-center justify-center border border-foreground px-6 py-3 font-sans font-semibold text-foreground transition-all duration-150 bg-background rounded-none;
   }
   
   .btn-outline:hover {
-    @apply border-cyan bg-cyan/10;
+    @apply bg-foreground text-background;
   }
   
+  /* Simplify dots */
   .status-dot {
-    @apply h-2.5 w-2.5 rounded-full;
+    @apply h-2.5 w-2.5 rounded-none;
   }
   
   .status-dot-online {
-    @apply bg-success animate-pulse-dot;
+    @apply bg-success;
   }
   
   .status-dot-warning {
@@ -119,44 +115,23 @@
   }
   
   .status-dot-violation {
-    @apply bg-violation animate-pulse-dot;
+    @apply bg-violation;
   }
   
   .scan-reticle {
-    @apply absolute inset-0 flex items-center justify-center pointer-events-none;
-  }
-  
-  .scan-reticle::before,
-  .scan-reticle::after {
-    content: '';
-    @apply absolute rounded-full border border-cyan/30;
-  }
-  
-  .scan-reticle::before {
-    width: 120px;
-    height: 120px;
-    animation: reticle-rotate 20s linear infinite;
-  }
-  
-  .scan-reticle::after {
-    width: 180px;
-    height: 180px;
-    animation: reticle-rotate 30s linear infinite reverse;
+    display: none;
   }
   
   .grain-overlay {
-    @apply fixed inset-0 pointer-events-none z-50;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    opacity: 0.04;
-    mix-blend-mode: overlay;
+    display: none;
   }
   
   .violation-border {
-    @apply border-violation/50 animate-violation-pulse;
+    @apply border-violation;
   }
   
   .telemetry-badge {
-    @apply inline-flex items-center gap-2 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-mono text-text-secondary border border-white/10;
+    @apply inline-flex items-center gap-2 border border-border bg-background px-3 py-1.5 text-xs font-mono text-foreground rounded-none;
   }
   
   .section-pinned {
@@ -164,7 +139,7 @@
   }
   
   .input-dark {
-    @apply rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/30 transition-all;
+    @apply border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all rounded-none;
   }
 }
 
@@ -181,37 +156,29 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
-  .perspective-1000 {
-    perspective: 1000px;
-  }
-  
-  .preserve-3d {
-    transform-style: preserve-3d;
-  }
 }
 
-/* Custom scrollbar for webkit browsers */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A1428;
+  background: #161616;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1A2E4F;
-  border-radius: 4px;
+  background: #393939;
+  border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00F0FF;
+  background: #525252;
 }
 
 /* Selection color */
 ::selection {
-  background: rgba(0, 240, 255, 0.3);
-  color: #F4F7FF;
+  background: #f4f4f4;
+  color: #161616;
 }

@@ -48,52 +48,54 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // SecureGuard Pro Custom Colors
+        // SecureGuard Pro mapped to Carbon Design System
         navy: {
-          900: '#0A1428',
-          800: '#0F1D38',
-          700: '#142442',
-          600: '#1A2E4F',
+          900: '#161616', // Core background
+          800: '#262626', // Elevated background
+          700: '#393939', // Layer
+          600: '#525252',
         },
         cyan: {
-          DEFAULT: '#00F0FF',
-          dark: '#00C4D1',
-          light: '#4DF5FF',
+          DEFAULT: '#f4f4f4', // Core text
+          dark: '#c6c6c6',
+          light: '#ffffff',
         },
         violation: {
-          DEFAULT: '#FF0033',
-          dark: '#CC0029',
-          light: '#FF3366',
+          DEFAULT: '#da1e28', // Red 60
+          dark: '#a2191f',
+          light: '#ff8389',
         },
         success: {
-          DEFAULT: '#00FFC2',
-          dark: '#00CC9B',
+          DEFAULT: '#f4f4f4', // Disable success colors, make them neutral
+          dark: '#c6c6c6',
         },
         warning: {
-          DEFAULT: '#FFAA00',
+          DEFAULT: '#f1c21b', // Yellow 30
         },
       },
       borderRadius: {
-        xl: "calc(var(--radius) + 4px)",
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        xs: "calc(var(--radius) - 6px)",
-        '2xl': '18px',
-        '3xl': '24px',
+        xl: "0px",
+        lg: "0px",
+        md: "0px",
+        sm: "0px",
+        xs: "0px",
+        '2xl': '0px',
+        '3xl': '0px',
+        full: "0px",
       },
       boxShadow: {
-        xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-        'glow-cyan': '0 0 40px rgba(0, 240, 255, 0.12)',
-        'glow-cyan-strong': '0 0 60px rgba(0, 240, 255, 0.25)',
-        'glow-violation': '0 0 40px rgba(255, 0, 51, 0.25)',
-        'card': '0 24px 70px rgba(0, 0, 0, 0.45)',
-        'glass': '0 8px 32px rgba(0, 0, 0, 0.3)',
+        xs: "none",
+        'glow-cyan': 'none',
+        'glow-cyan-strong': 'none',
+        'glow-violation': 'none',
+        'card': 'none',
+        'glass': 'none',
       },
       fontFamily: {
-        sora: ['Sora', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
+        sora: ['IBM Plex Sans', 'sans-serif'],
+        inter: ['IBM Plex Sans', 'sans-serif'],
         mono: ['IBM Plex Mono', 'monospace'],
+        sans: ['IBM Plex Sans', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {
@@ -108,51 +110,16 @@ module.exports = {
           "0%,70%,100%": { opacity: "1" },
           "20%,50%": { opacity: "0" },
         },
-        "pulse-dot": {
-          "0%, 100%": { opacity: "1", transform: "scale(1)" },
-          "50%": { opacity: "0.7", transform: "scale(1.25)" },
-        },
-        "pulse-glow": {
-          "0%, 100%": { opacity: "0.6" },
-          "50%": { opacity: "1" },
-        },
-        "scan-line": {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
-        },
-        "reticle-rotate": {
-          "0%": { transform: "rotate(0deg)" },
-          "100%": { transform: "rotate(360deg)" },
-        },
-        "float": {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
-        },
-        "shimmer": {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
-        },
-        "violation-pulse": {
-          "0%, 100%": { boxShadow: "0 0 0 0 rgba(255, 0, 51, 0.4)" },
-          "50%": { boxShadow: "0 0 0 15px rgba(255, 0, 51, 0)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "caret-blink": "caret-blink 1.25s ease-out infinite",
-        "pulse-dot": "pulse-dot 1.2s ease-in-out infinite",
-        "pulse-glow": "pulse-glow 2.6s ease-in-out infinite",
-        "scan-line": "scan-line 2s linear infinite",
-        "reticle-rotate": "reticle-rotate 20s linear infinite",
-        "float": "float 3s ease-in-out infinite",
-        "shimmer": "shimmer 2s linear infinite",
-        "violation-pulse": "violation-pulse 1.5s ease-in-out infinite",
       },
       backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'glass': 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
+        'gradient-radial': 'none',
+        'gradient-conic': 'none',
+        'glass': 'none',
       },
     },
   },

@@ -37,7 +37,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       >
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-            <Shield className="h-6 w-6 text-cyan" />
+            <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
           </div>
           <span className="font-sora text-xl font-bold text-white">
             SecureGuard
@@ -46,11 +46,11 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         
         <div className="flex items-center gap-6 text-sm text-text-secondary">
           <div className="hidden items-center gap-2 md:flex">
-            <Lock className="h-4 w-4" />
+            <Lock strokeWidth={1} className="h-4 w-4" />
             <span>256-bit Encryption</span>
           </div>
           <div className="hidden items-center gap-2 md:flex">
-            <Server className="h-4 w-4" />
+            <Server strokeWidth={1} className="h-4 w-4" />
             <span>SOC 2 Compliant</span>
           </div>
         </div>
@@ -74,7 +74,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
                 transition={{ delay: 0.2 }}
                 className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan/10"
               >
-                <Shield className="h-8 w-8 text-cyan" />
+                <Shield strokeWidth={1} className="h-8 w-8 text-cyan" />
               </motion.div>
               <h1 className="font-sora text-2xl font-bold text-white">
                 {title}
@@ -99,11 +99,11 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           >
             <div className="flex items-center justify-center gap-4 text-xs text-text-secondary">
               <span className="flex items-center gap-1">
-                <Globe className="h-3 w-3" />
+                <Globe strokeWidth={1} className="h-3 w-3" />
                 GDPR Ready
               </span>
               <span className="flex items-center gap-1">
-                <Lock className="h-3 w-3" />
+                <Lock strokeWidth={1} className="h-3 w-3" />
                 TLS 1.3
               </span>
             </div>
