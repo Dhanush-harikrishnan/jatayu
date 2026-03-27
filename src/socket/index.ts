@@ -75,7 +75,7 @@ export const initializeSocketServer = (server: HttpServer) => {
 
     // Log a SESSION_STARTED event so the admin dashboard shows this student even without violations
     if (role === 'primary') {
-      const ctx = { userId: decoded.userId, studentName: (decoded as any).name, examId: decoded.examId };
+      const ctx = { userId: tokenUser.userId, studentName: tokenUser.name, examId: tokenUser.examId };
       awsService.logViolationEvent(
         sessionId,
         new Date().toISOString(),
