@@ -265,7 +265,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       <div className="min-h-screen bg-navy-900 flex flex-col items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-cyan/10 mx-auto mb-6">
-            <Shield className="h-10 w-10 text-cyan" />
+            <Shield strokeWidth={1} className="h-10 w-10 text-cyan" />
           </div>
           <h1 className="font-sora text-2xl font-bold text-white mb-2">SecureGuard Pro</h1>
           <p className="text-text-secondary mb-2">Secondary Camera</p>
@@ -286,21 +286,21 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
             onClick={handleConnect}
             className="w-full py-4 rounded-xl bg-cyan text-navy-900 font-semibold text-lg hover:bg-cyan/90 transition-colors flex items-center justify-center gap-3"
           >
-            <Camera className="h-6 w-6" />
+            <Camera strokeWidth={1} className="h-6 w-6" />
             Connect Camera
           </button>
 
           <div className="mt-6 space-y-2 text-left">
             <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <CheckCircle className="h-4 w-4 text-cyan/60" />
+              <CheckCircle strokeWidth={1} className="h-4 w-4 text-cyan/60" />
               <span>Camera will only be used during the exam</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <CheckCircle className="h-4 w-4 text-cyan/60" />
+              <CheckCircle strokeWidth={1} className="h-4 w-4 text-cyan/60" />
               <span>Keep your phone plugged in for power</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-text-secondary">
-              <CheckCircle className="h-4 w-4 text-cyan/60" />
+              <CheckCircle strokeWidth={1} className="h-4 w-4 text-cyan/60" />
               <span>Ensure good lighting in the room</span>
             </div>
           </div>
@@ -330,7 +330,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       <div className="min-h-screen bg-navy-900 flex flex-col items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-violation/20 mx-auto mb-4">
-            <AlertTriangle className="h-8 w-8 text-violation" />
+            <AlertTriangle strokeWidth={1} className="h-8 w-8 text-violation" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Connection Failed</h2>
           <p className="text-sm text-text-secondary mb-6">{errorMessage || 'An unexpected error occurred.'}</p>
@@ -351,7 +351,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       <div className="min-h-screen bg-navy-900 flex flex-col items-center justify-center px-6">
         <div className="text-center max-w-sm">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/20 mx-auto mb-4">
-            <CheckCircle className="h-8 w-8 text-success" />
+            <CheckCircle strokeWidth={1} className="h-8 w-8 text-success" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Exam Complete</h2>
           <p className="text-sm text-text-secondary mb-2">The exam session has ended.</p>
@@ -370,8 +370,8 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       {/* Status Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-gradient-to-b from-black/80 to-transparent">
         <div className="flex items-center gap-2">
-          <Signal className="h-4 w-4 text-white" />
-          <Wifi className="h-4 w-4 text-white" />
+          <Signal strokeWidth={1} className="h-4 w-4 text-white" />
+          <Wifi strokeWidth={1} className="h-4 w-4 text-white" />
         </div>
         <div className="text-sm font-medium text-white">
           {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -425,7 +425,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
           </div>
           
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm">
-            <Camera className="h-3 w-3 text-cyan" />
+            <Camera strokeWidth={1} className="h-3 w-3 text-cyan" />
             <span className="text-xs text-white">{facingMode === 'environment' ? 'Rear' : 'Front'} Camera</span>
           </div>
         </div>
@@ -444,7 +444,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
             movementAlert ? 'bg-violation/80' : 'bg-black/60'
           )}>
             <div className="flex items-center gap-2 mb-2">
-              <Move className={cn(
+              <Move strokeWidth={1} className={cn(
                 'h-4 w-4',
                 movementAlert ? 'text-white' : 'text-cyan'
               )} />
@@ -494,7 +494,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
               className="absolute top-1/3 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl bg-violation/90 backdrop-blur-sm"
             >
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-white" />
+                <AlertTriangle strokeWidth={1} className="h-5 w-5 text-white" />
                 <span className="text-sm font-medium text-white">Device Movement Detected</span>
               </div>
               <p className="text-xs text-white/80 mt-1">Please keep the device stationary</p>
@@ -510,7 +510,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
               onClick={switchCamera}
               className="h-12 w-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors"
             >
-              <RefreshCw className="h-5 w-5" />
+              <RefreshCw strokeWidth={1} className="h-5 w-5" />
             </button>
 
             {/* Recording Indicator */}
@@ -521,7 +521,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
 
             {/* Info Button */}
             <button className="h-12 w-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors">
-              <Smartphone className="h-5 w-5" />
+              <Smartphone strokeWidth={1} className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -529,10 +529,10 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
         {/* Positioning Arrows */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
           <div className="relative w-48 h-48">
-            <ChevronUp className="absolute top-0 left-1/2 -translate-x-1/2 h-6 w-6 text-white/30" />
-            <ChevronDown className="absolute bottom-0 left-1/2 -translate-x-1/2 h-6 w-6 text-white/30" />
-            <ChevronLeft className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-6 text-white/30" />
-            <ChevronRight className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6 text-white/30" />
+            <ChevronUp strokeWidth={1} className="absolute top-0 left-1/2 -translate-x-1/2 h-6 w-6 text-white/30" />
+            <ChevronDown strokeWidth={1} className="absolute bottom-0 left-1/2 -translate-x-1/2 h-6 w-6 text-white/30" />
+            <ChevronLeft strokeWidth={1} className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-6 text-white/30" />
+            <ChevronRight strokeWidth={1} className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6 text-white/30" />
           </div>
         </div>
       </div>

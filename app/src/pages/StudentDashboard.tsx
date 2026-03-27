@@ -68,14 +68,14 @@ export function StudentDashboard() {
       case 'upcoming':
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan/10 px-3 py-1 text-xs font-medium text-cyan border border-cyan/20">
-            <Calendar className="h-3 w-3" />
+            <Calendar strokeWidth={1} className="h-3 w-3" />
             Upcoming
           </span>
         );
       case 'completed':
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/60 border border-white/10">
-            <CheckCircle className="h-3 w-3" />
+            <CheckCircle strokeWidth={1} className="h-3 w-3" />
             Completed
           </span>
         );
@@ -89,7 +89,7 @@ export function StudentDashboard() {
         <div className="flex items-center justify-between px-4 py-4 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-              <Shield className="h-6 w-6 text-cyan" />
+              <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
             </div>
             <div>
               <h1 className="font-sora text-lg font-bold text-white">SecureGuard</h1>
@@ -103,13 +103,13 @@ export function StudentDashboard() {
               <p className="text-xs text-text-secondary">Student ID: STU-2024-001</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan/10">
-              <User className="h-5 w-5 text-cyan" />
+              <User strokeWidth={1} className="h-5 w-5 text-cyan" />
             </div>
             <button 
               onClick={() => window.location.href = '/login'}
               className="flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:bg-white/5 hover:text-white transition-colors"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut strokeWidth={1} className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function StudentDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 border border-white/10">
-              <Clock className="h-5 w-5 text-cyan" />
+              <Clock strokeWidth={1} className="h-5 w-5 text-cyan" />
               <span className="font-mono text-sm text-white">
                 {currentTime.toLocaleTimeString('en-US', { hour12: false })}
               </span>
@@ -154,7 +154,7 @@ export function StudentDashboard() {
                   <p className="mt-1 font-sora text-3xl font-bold text-success">{activeExams.length}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
-                  <PlayCircle className="h-6 w-6 text-success" />
+                  <PlayCircle strokeWidth={1} className="h-6 w-6 text-success" />
                 </div>
               </div>
             </div>
@@ -165,7 +165,7 @@ export function StudentDashboard() {
                   <p className="mt-1 font-sora text-3xl font-bold text-cyan">{upcomingExams.length}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan/10">
-                  <Calendar className="h-6 w-6 text-cyan" />
+                  <Calendar strokeWidth={1} className="h-6 w-6 text-cyan" />
                 </div>
               </div>
             </div>
@@ -176,7 +176,7 @@ export function StudentDashboard() {
                   <p className="mt-1 font-sora text-3xl font-bold text-white/60">{completedExams.length}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                  <CheckCircle className="h-6 w-6 text-white/60" />
+                  <CheckCircle strokeWidth={1} className="h-6 w-6 text-white/60" />
                 </div>
               </div>
             </div>
@@ -255,15 +255,15 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
           
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
             <div className="flex items-center gap-1.5 text-white/70">
-              <Timer className="h-4 w-4 text-cyan" />
+              <Timer strokeWidth={1} className="h-4 w-4 text-cyan" />
               <span>{formatDuration(exam.duration)}</span>
             </div>
             <div className="flex items-center gap-1.5 text-white/70">
-              <BookOpen className="h-4 w-4 text-cyan" />
+              <BookOpen strokeWidth={1} className="h-4 w-4 text-cyan" />
               <span>{exam.totalQuestions} questions</span>
             </div>
             <div className="flex items-center gap-1.5 text-white/70">
-              <Calendar className="h-4 w-4 text-cyan" />
+              <Calendar strokeWidth={1} className="h-4 w-4 text-cyan" />
               <span>{formatDateTime(exam.startTime)}</span>
             </div>
           </div>
@@ -276,7 +276,7 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
               className="btn-primary flex items-center gap-2 whitespace-nowrap"
             >
               Start Exam
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight strokeWidth={1} className="h-4 w-4" />
             </a>
           )}
           {exam.status === 'active' && exam.enabled === false && (
@@ -308,7 +308,7 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
       {exam.status === 'active' && exam.instructions.length > 0 && (
         <div className="mt-4 rounded-xl bg-cyan/5 p-4 border border-cyan/10">
           <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="h-4 w-4 text-cyan" />
+            <AlertCircle strokeWidth={1} className="h-4 w-4 text-cyan" />
             <span className="text-sm font-medium text-cyan">Important Instructions</span>
           </div>
           <ul className="space-y-1">

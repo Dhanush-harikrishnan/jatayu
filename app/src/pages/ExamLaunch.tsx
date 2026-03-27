@@ -381,11 +381,11 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
               onClick={() => navigateSafely('/dashboard')}
               className="flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:bg-white/5 hover:text-white transition-colors"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft strokeWidth={1} className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-                <Shield className="h-6 w-6 text-cyan" />
+                <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
               </div>
               <div>
                 <h1 className="font-sora text-lg font-bold text-white">SecureGuard</h1>
@@ -486,7 +486,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
 
                 <div className="glass-card p-6">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-cyan flex-shrink-0 mt-0.5" />
+                    <AlertCircle strokeWidth={1} className="h-5 w-5 text-cyan flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-medium text-white">Important Rules</h4>
                       <ul className="mt-2 space-y-2 text-sm text-text-secondary">
@@ -522,7 +522,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     )}
                   >
                     Continue to Pairing
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight strokeWidth={1} className="h-4 w-4" />
                   </button>
                 </div>
               </motion.div>
@@ -558,7 +558,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                           animate={{ scale: 1 }}
                           className="absolute inset-0 flex items-center justify-center bg-success/90 rounded-xl"
                         >
-                          <CheckCircle className="h-16 w-16 text-navy-900" />
+                          <CheckCircle strokeWidth={1} className="h-16 w-16 text-navy-900" />
                         </motion.div>
                       )}
                     </div>
@@ -593,13 +593,13 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                           onClick={copyPairingCode}
                           className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
                         >
-                          <Copy className="h-5 w-5" />
+                          <Copy strokeWidth={1} className="h-5 w-5" />
                         </button>
                         <button
                           onClick={refreshPairingCode}
                           className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
                         >
-                          <RefreshCw className="h-5 w-5" />
+                          <RefreshCw strokeWidth={1} className="h-5 w-5" />
                         </button>
                       </div>
                       <p className="mt-4 text-sm text-text-secondary">
@@ -617,7 +617,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                           'h-10 w-10 rounded-full flex items-center justify-center',
                           isPaired ? 'bg-success/20' : 'bg-white/10'
                         )}>
-                          <Smartphone className={cn(
+                          <Smartphone strokeWidth={1} className={cn(
                             'h-5 w-5',
                             isPaired ? 'text-success' : 'text-white/40'
                           )} />
@@ -632,7 +632,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                               : 'Keep this page open while pairing'}
                           </p>
                         </div>
-                        {isPaired && <CheckCircle className="h-6 w-6 text-success" />}
+                        {isPaired && <CheckCircle strokeWidth={1} className="h-6 w-6 text-success" />}
                       </div>
                     </div>
 
@@ -662,7 +662,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     )}
                   >
                     Continue
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight strokeWidth={1} className="h-4 w-4" />
                   </button>
                 </div>
               </motion.div>
@@ -697,7 +697,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                         />
                       ) : cameraPermission === false ? (
                         <div className="flex flex-col items-center justify-center h-full">
-                          <AlertCircle className="h-12 w-12 text-violation mb-2" />
+                          <AlertCircle strokeWidth={1} className="h-12 w-12 text-violation mb-2" />
                           <p className="text-sm text-text-secondary">Camera access denied</p>
                         </div>
                       ) : (
@@ -788,7 +788,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     )}
                   >
                     Proceed to Liveness Check
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight strokeWidth={1} className="h-4 w-4" />
                   </button>
                 </div>
               </motion.div>
@@ -825,7 +825,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     </ThemeProvider>
                   ) : livenessPassed ? (
                      <div className="flex flex-col items-center justify-center p-8">
-                      <CheckCircle className="h-16 w-16 text-success mb-4" />
+                      <CheckCircle strokeWidth={1} className="h-16 w-16 text-success mb-4" />
                       <p className="text-xl font-bold text-navy-900">Verification Passed!</p>
                      </div>
                   ) : (
@@ -864,7 +864,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     )}
                   >
                     Proceed to Exam
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight strokeWidth={1} className="h-4 w-4" />
                   </button>
                 </div>
               </motion.div>
@@ -885,7 +885,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     transition={{ type: 'spring', stiffness: 200 }}
                     className="mx-auto h-20 w-20 rounded-full bg-success/20 flex items-center justify-center mb-6"
                   >
-                    <CheckCircle className="h-10 w-10 text-success" />
+                    <CheckCircle strokeWidth={1} className="h-10 w-10 text-success" />
                   </motion.div>
                   
                   <h2 className="font-sora text-2xl font-bold text-white">All Systems Ready!</h2>
@@ -947,7 +947,7 @@ function RequirementCard({ icon: Icon, title, description, status }: Requirement
           {status === 'checking' && (
             <div className="h-4 w-4 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
           )}
-          {status === 'passed' && <CheckCircle className="h-4 w-4 text-success" />}
+          {status === 'passed' && <CheckCircle strokeWidth={1} className="h-4 w-4 text-success" />}
         </div>
         <p className="text-sm text-text-secondary mt-1">{description}</p>
       </div>
@@ -969,11 +969,11 @@ function StatusCheckItem({ label, status, successText, errorText, actionText, on
     <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
       <div className="flex items-center gap-3">
         {status === true ? (
-          <CheckCircle className="h-5 w-5 text-success" />
+          <CheckCircle strokeWidth={1} className="h-5 w-5 text-success" />
         ) : status === false ? (
-          <AlertCircle className="h-5 w-5 text-violation" />
+          <AlertCircle strokeWidth={1} className="h-5 w-5 text-violation" />
         ) : actionText ? (
-          <Laptop className="h-5 w-5 text-warning" />
+          <Laptop strokeWidth={1} className="h-5 w-5 text-warning" />
         ) : (
           <div className="h-5 w-5 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
         )}

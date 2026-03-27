@@ -149,7 +149,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
         <div className="flex items-center justify-between px-4 py-4 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-              <Shield className="h-6 w-6 text-cyan" />
+              <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
             </div>
             <span className="font-sora text-xl font-bold text-white">SecureGuard</span>
           </div>
@@ -188,7 +188,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="lg:hidden h-10 w-10 flex items-center justify-center text-white"
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? <X strokeWidth={1} className="h-6 w-6" /> : <Menu strokeWidth={1} className="h-6 w-6" />}
           </button>
         </div>
 
@@ -278,25 +278,25 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
                     className="btn-primary flex items-center gap-2"
                   >
                     Request a Demo
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight strokeWidth={1} className="h-4 w-4" />
                   </button>
                   <button className="btn-outline flex items-center gap-2">
-                    <Play className="h-4 w-4" />
+                    <Play strokeWidth={1} className="h-4 w-4" />
                     Watch Video
                   </button>
                 </div>
 
                 <div className="mt-12 flex items-center gap-6 text-sm text-text-secondary">
                   <span className="flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
+                    <Lock strokeWidth={1} className="h-4 w-4" />
                     SOC 2 Type II
                   </span>
                   <span className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
+                    <Globe strokeWidth={1} className="h-4 w-4" />
                     GDPR Ready
                   </span>
                   <span className="flex items-center gap-2">
-                    <Server className="h-4 w-4" />
+                    <Server strokeWidth={1} className="h-4 w-4" />
                     WCAG 2.1 AA
                   </span>
                 </div>
@@ -315,7 +315,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
                     {/* Header */}
                     <div className="flex items-center justify-between pb-4 border-b border-white/10">
                       <div className="flex items-center gap-3">
-                        <Shield className="h-5 w-5 text-cyan" />
+                        <Shield strokeWidth={1} className="h-5 w-5 text-cyan" />
                         <span className="font-medium text-white">SecureGuard Pro</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -334,7 +334,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
                         <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-cyan/20 flex items-center justify-center">
-                              <Users className="h-4 w-4 text-cyan" />
+                              <Users strokeWidth={1} className="h-4 w-4 text-cyan" />
                             </div>
                             <span className="text-sm text-white">{student.name}</span>
                           </div>
@@ -358,7 +358,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-16 h-16 rounded-full border-2 border-cyan/50 animate-pulse" />
                       </div>
-                      <Eye className="h-8 w-8 text-cyan relative z-10" />
+                      <Eye strokeWidth={1} className="h-8 w-8 text-cyan relative z-10" />
                       
                       {/* Scan line */}
                       <div className="absolute inset-x-0 h-px bg-cyan/50 animate-scan-line" />
@@ -492,7 +492,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
                 >
                   <div className="flex gap-1 mb-4">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="h-4 w-4 text-cyan fill-cyan" />
+                      <Star strokeWidth={1} key={j} className="h-4 w-4 text-cyan fill-cyan" />
                     ))}
                   </div>
                   <p className="text-lg text-white/90 mb-6">"{testimonial.quote}"</p>
@@ -524,7 +524,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
                 className="btn-primary flex items-center gap-2"
               >
                 Request a Demo
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight strokeWidth={1} className="h-4 w-4" />
               </button>
               <button className="btn-outline">
                 Talk to Sales
@@ -542,7 +542,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-                    <Shield className="h-6 w-6 text-cyan" />
+                    <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
                   </div>
                   <span className="font-sora text-lg font-bold text-white">SecureGuard</span>
                 </div>
