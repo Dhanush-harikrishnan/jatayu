@@ -141,15 +141,35 @@ export const analyzeSetupFrame = async (req: Request, res: Response, next: NextF
     const buffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
     const s3Key = `exams/${examId}/${userSession.sessionId}/${Date.now()}_setup-frame.jpg`;
 
-    // Upload via backend to avoid browser S3 CORS requirements during local development.
-    await awsService.uploadEvidenceToS3(s3Key, imageBase64);
+    // Step 1: Upload to S3
+    try {
+      await awsService.uploadEvidenceToS3(s3Key, imageBase64);
+    } catch (s3Err: any) {
+      logger.error(`[analyzeSetupFrame] S3 upload failed: [${s3Err?.name}] ${s3Err?.message}`);
+      // Continue without S3 upload — Rekognition can still analyze via bytes
+    }
 
-    const [labelsRes, facesRes] = await Promise.all([
-      awsService.detectLabels(buffer),
-      awsService.detectFaces(buffer),
-    ]);
+    // Step 2: Call Rekognition with raw bytes (no S3 dependency)
+    let labelsRes: any = { Labels: [] };
+    let facesRes: any = { FaceDetails: [] };
+    try {
+      [labelsRes, facesRes] = await Promise.all([
+        awsService.detectLabels(buffer),
+        awsService.detectFaces(buffer),
+      ]);
+    } catch (rekErr: any) {
+      logger.error(`[analyzeSetupFrame] Rekognition failed: [${rekErr?.name}] ${rekErr?.message}`);
+      // Return a graceful response instead of crashing
+      return res.json({
+        success: true,
+        violationDetected: false,
+        faceCount: 0,
+        faceDetected: false,
+        warning: `Face detection temporarily unavailable: ${rekErr?.name || 'Unknown error'}`,
+      });
+    }
 
-    const hasPhone = labelsRes.Labels?.some(l =>
+    const hasPhone = labelsRes.Labels?.some((l: any) =>
       ['Phone', 'Cell Phone', 'Mobile Phone', 'Electronics', 'Electronics Device'].includes(l.Name || '')
     );
     const faceCount = facesRes.FaceDetails?.length || 0;
@@ -179,29 +199,35 @@ export const analyzeSetupFrame = async (req: Request, res: Response, next: NextF
       const timestamp = new Date().toISOString();
       const metadata = {
         confidence: primaryFace?.Confidence ? primaryFace.Confidence / 100 : 0.9,
-        faceDetails: facesRes.FaceDetails?.map(f => ({
+        faceDetails: facesRes.FaceDetails?.map((f: any) => ({
           confidence: f.Confidence,
-          emotions: f.Emotions?.map(e => ({ type: e.Type, confidence: e.Confidence })) || [],
+          emotions: f.Emotions?.map((e: any) => ({ type: e.Type, confidence: e.Confidence })) || [],
           eyeGaze: { yaw: f.Pose?.Yaw, pitch: f.Pose?.Pitch },
           sunglasses: { value: f.Sunglasses?.Value, confidence: f.Sunglasses?.Confidence },
           eyeglasses: { value: f.Eyeglasses?.Value, confidence: f.Eyeglasses?.Confidence }
         })) || [],
-        labels: labelsRes.Labels?.map(l => ({ name: l.Name, confidence: l.Confidence })) || [],
+        labels: labelsRes.Labels?.map((l: any) => ({ name: l.Name, confidence: l.Confidence })) || [],
         moderation: []
       };
 
-      await awsService.logViolationEvent(
-        userSession.sessionId,
-        timestamp,
-        violationType,
-        s3Key,
-        metadata,
-        {
-          userId: userSession.userId,
-          studentName: (userSession as any).name,
-          examId: userSession.examId,
-        }
-      );
+      // Step 3: Log violation to DynamoDB (non-blocking)
+      try {
+        await awsService.logViolationEvent(
+          userSession.sessionId,
+          timestamp,
+          violationType,
+          s3Key,
+          metadata,
+          {
+            userId: userSession.userId,
+            studentName: (userSession as any).name,
+            examId: userSession.examId,
+          }
+        );
+      } catch (dbErr: any) {
+        logger.error(`[analyzeSetupFrame] DynamoDB logViolation failed: [${dbErr?.name}] ${dbErr?.message}`);
+        // Don't crash the response — violation was still detected
+      }
 
       return res.json({
         success: true,
@@ -221,7 +247,8 @@ export const analyzeSetupFrame = async (req: Request, res: Response, next: NextF
       faceCount,
       faceDetected,
     });
-  } catch (error) {
+  } catch (error: any) {
+    logger.error(`[analyzeSetupFrame] Unhandled error: [${error?.name}] ${error?.message}`);
     next(error);
   }
 };
@@ -392,8 +419,13 @@ export const createLivenessSession = async (req: Request, res: Response, next: N
   try {
     const sessionId = await awsService.createFaceLivenessSession();
     res.json({ success: true, sessionId });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    logger.error(`[createLivenessSession] AWS error: [${error?.name}] ${error?.message}`);
+    // Return a descriptive error so the frontend can show a meaningful message
+    res.status(500).json({
+      success: false,
+      message: `Liveness session creation failed: ${error?.name || 'Unknown'} - ${error?.message || 'Check server logs'}`,
+    });
   }
 };
 
