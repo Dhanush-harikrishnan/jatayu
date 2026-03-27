@@ -18,6 +18,8 @@ export class CorrelationEngine {
   private windowMs = config.thresholds.correlationWindowMs;
   private lastPrimaryEvidenceKey?: string;
   private lastPrimaryMetadata?: any;
+  private lastSecondaryEvidenceKey?: string;
+  private lastSecondaryMetadata?: any;
   private context?: { userId?: string; studentName?: string; examId?: string };
   // Cooldown map: violationType -> last triggered epoch ms
   private violationCooldowns = new Map<string, number>();
@@ -54,14 +56,25 @@ export class CorrelationEngine {
   public addEvent(event: TelemetryEvent) {
     if (event.type === 'LAPTOP_FRAME' && event.evidenceKey) {
       this.lastPrimaryEvidenceKey = event.evidenceKey;
+      if (event.data?.rekognitionMetadata) {
+        this.lastPrimaryMetadata = event.data.rekognitionMetadata;
+      }
     }
-    if (
-      event.type === 'LAPTOP_FRAME' &&
-      event.evidenceKey &&
-      (event.data?.rekognitionMetadata || event.data?.metadata)
-    ) {
-      // Store the latest Rekognition face analysis so that the violation can be rendered with real AWS proof data.
-      this.lastPrimaryMetadata = event.data.rekognitionMetadata || event.data.metadata;
+    if (event.type === 'MOBILE_FRAME' && event.evidenceKey) {
+      this.lastSecondaryEvidenceKey = event.evidenceKey;
+      if (event.data?.rekognitionMetadata) {
+        this.lastSecondaryMetadata = event.data.rekognitionMetadata;
+      }
+    }
+    // Also capture special detection metadata from PHONE_DETECTED events
+    if (event.type === 'PHONE_DETECTED') {
+      if (event.evidenceKey) this.lastSecondaryEvidenceKey = event.evidenceKey;
+      if (event.data) {
+        this.lastSecondaryMetadata = { 
+          label: event.data.label, 
+          confidence: (event.data.confidence ?? 0) / 100 
+        };
+      }
     }
     this.events.push(event);
     this.evaluateRules();
@@ -146,13 +159,16 @@ export class CorrelationEngine {
 
     const isoTimestamp = new Date().toISOString();
     // Use the last known evidence key; fall back to a placeholder so the event still persists.
-    const s3Key = this.lastPrimaryEvidenceKey || `evidence/${this.sessionId}/no-evidence/${Date.now()}.jpg`;
+    // Select evidence key: mobile violations should prefer mobile snapshots
+    const isMobileViolation = ['PHONE_DETECTED', 'PHONE_MOVEMENT_DETECTED'].includes(violationType);
+    const s3Key = (isMobileViolation ? this.lastSecondaryEvidenceKey : this.lastPrimaryEvidenceKey) 
+                || this.lastPrimaryEvidenceKey 
+                || this.lastSecondaryEvidenceKey
+                || `evidence/${this.sessionId}/no-evidence/${Date.now()}.jpg`;
 
-    if (!this.lastPrimaryEvidenceKey) {
-      logger.warn(
-        `[Violation] No evidence uploaded yet for ${violationType} in session ${this.sessionId}. Logging without snapshot.`
-      );
-    }
+    const metadata = (isMobileViolation ? this.lastSecondaryMetadata : this.lastPrimaryMetadata)
+                  || this.lastPrimaryMetadata
+                  || this.lastSecondaryMetadata;
 
     try {
       await awsService.logViolationEvent(
@@ -160,10 +176,10 @@ export class CorrelationEngine {
         isoTimestamp,
         violationType,
         s3Key,
-        this.lastPrimaryMetadata,
+        metadata,
         this.context
       );
-      logger.info(`[Violation] Logged to DynamoDB: ${violationType} session=${this.sessionId}`);
+      logger.info(`[Violation] Logged to DynamoDB: ${violationType} session=${this.sessionId} key=${s3Key}`);
     } catch (e) {
       logger.error('DynamoDB Logging failed:', e);
     }
