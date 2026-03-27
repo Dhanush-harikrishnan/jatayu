@@ -31,6 +31,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
   const socketRef = useRef<Socket | null>(null);
   const snapshotIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const connectedAtRef = useRef<number>(0);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -196,6 +197,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       socket.on('connect', () => {
         console.log('Mobile socket connected:', socket.id);
         setConnectionState('connected');
+        connectedAtRef.current = Date.now();
         // Notify the desktop that mobile is paired
         socket.emit('mobile-paired', { timestamp: Date.now() });
         // Start sending snapshots
@@ -210,8 +212,17 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
 
       socket.on('exam-ended', () => {
         console.log('Exam ended signal received');
-        setConnectionState('ended');
-        stopEverything();
+        // Only honor exam-ended if we've been connected long enough and
+        // captured at least one frame — avoids race conditions during
+        // initial connection / primary page navigation.
+        const connectedLongEnough = connectedAtRef.current > 0 &&
+          (Date.now() - connectedAtRef.current) > 5000;
+        if (connectedLongEnough) {
+          setConnectionState('ended');
+          stopEverything();
+        } else {
+          console.warn('Ignoring premature exam-ended signal (connected too recently)');
+        }
       });
 
       socket.on('disconnect', (reason) => {

@@ -6,7 +6,8 @@ import {
   Maximize2, Minimize2, User
 } from 'lucide-react';
 import { cn, getViolationDescription } from '@/lib/utils';
-import { fetchApi } from '@/lib/api';
+import { fetchApi, API_BASE_URL } from '@/lib/api';
+import { io as socketIO, Socket } from 'socket.io-client';
 
 interface LiveProctoringProps {
   examId?: string;
@@ -78,6 +79,33 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const noFaceStrikeRef = useRef(0);
   const allowNavigationRef = useRef(false);
+  const socketRef = useRef<Socket | null>(null);
+
+  // Connect socket.io so the backend correlation engine gets frames and
+  // the explicit 'end-exam' event can be sent when the student finishes.
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const socket = socketIO(API_BASE_URL, {
+      transports: ['websocket'],
+      auth: { token },
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('LiveProctoring socket connected:', socket.id);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error('LiveProctoring socket error:', err.message);
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, []);
 
   const addToast = (toast: Toast) => {
     setToasts(prev => [toast, ...prev].slice(0, 5));
@@ -278,6 +306,13 @@ export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
     if (!window.confirm("Are you sure you want to finish and submit the exam? You cannot change your answers after submission.")) return;
     
     setIsSubmitting(true);
+
+    // Signal the backend (and all room members, e.g. mobile camera) that
+    // the exam has explicitly ended.
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('end-exam');
+    }
+
     const sessionId = localStorage.getItem('sessionId');
     const email = 'student@university.edu'; // Placeholder
 

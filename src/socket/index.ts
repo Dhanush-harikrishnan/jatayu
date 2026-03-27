@@ -93,12 +93,23 @@ export const initializeSocketServer = (server: HttpServer) => {
       socket.to(roomName).emit('mobile-paired', data);
     });
 
+    // Explicit end-exam event: only fires when the student intentionally finishes
+    socket.on('end-exam', () => {
+      if (role === 'primary') {
+        logger.info(`Exam explicitly ended by primary in session ${sessionId}`);
+        io.to(roomName).emit('exam-ended', { timestamp: Date.now() });
+        sessionRegistry.touch(sessionId, 'offline');
+      }
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.id}`);
       if (role === 'primary') {
         sessionRegistry.touch(sessionId, 'offline');
-        // Notify all devices in the session that the exam has ended
-        io.to(roomName).emit('exam-ended', { timestamp: Date.now() });
+        // Do NOT emit exam-ended here — primary socket disconnects on page
+        // navigation (e.g. setup → proctoring) and would falsely kill the
+        // mobile camera session.  Only an explicit 'end-exam' event should
+        // terminate the mobile session.
       }
       // Clean up engine if all clients in session disconnected
       const clientsInRoom = io.sockets.adapter.rooms.get(roomName)?.size || 0;

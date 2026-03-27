@@ -33,10 +33,10 @@ export const config = {
     sesSourceEmail: process.env.AWS_SES_SOURCE_EMAIL || ''
   },
   thresholds: {
-    rekognitionConfidence: parseFloat(process.env.REKOGNITION_CONFIDENCE_THRESHOLD || '90.0'),
+    rekognitionConfidence: parseFloat(process.env.REKOGNITION_CONFIDENCE_THRESHOLD || '70.0'),
     isolationForest: parseFloat(process.env.ISOLATION_FOREST_THRESHOLD || '-0.5'),
     correlationWindowMs: parseInt(process.env.CORRELATION_WINDOW_MS || '5000', 10),
-    facialOrientation: parseFloat(process.env.FACIAL_ORIENTATION_THRESHOLD || '25'),
+    facialOrientation: parseFloat(process.env.FACIAL_ORIENTATION_THRESHOLD || '20'),
     // Telemetry websocket frames can be frequent; rate-limit evidence uploads to keep costs bounded.
     evidenceUploadIntervalMs: parseInt(process.env.EVIDENCE_UPLOAD_INTERVAL_MS || '5000', 10),
   }
