@@ -218,6 +218,14 @@ export const awsService = {
     }
   },
 
+  logViolationEvent: async (
+    sessionId: string,
+    timestamp: string,
+    violationType: string,
+    s3Key: string,
+    metadata?: any,
+    context?: { userId?: string; studentName?: string; examId?: string }
+  ) => {
     const uniqueId = `${sessionId}_${timestamp}_${Math.random().toString(36).substring(2, 7)}`;
     const item: any = {
       id: { S: uniqueId }, // The actual Partition Key found in DynamoDB
