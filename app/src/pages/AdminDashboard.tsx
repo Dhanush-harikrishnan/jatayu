@@ -133,6 +133,8 @@ export function AdminDashboard() {
     return matchesSearch && matchesStatus;
   });
 
+  const gridColumns = Math.max(1, Math.ceil(Math.sqrt(filteredStudents.length)));
+
   const stats = {
     total: students.length,
     online: students.filter(s => s.status === 'online').length,
@@ -161,7 +163,7 @@ export function AdminDashboard() {
         <div className="flex items-center justify-between px-4 py-3 lg:px-6">
           <div className="flex items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-              <Shield className="h-6 w-6 text-cyan" />
+              <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
             </div>
             <div>
               <h1 className="font-sora text-lg font-bold text-white">SecureGuard Pro</h1>
@@ -184,7 +186,7 @@ export function AdminDashboard() {
           {/* Right Actions */}
           <div className="flex items-center gap-3">
             <button className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
-              <Bell className="h-5 w-5" />
+              <Bell strokeWidth={1} className="h-5 w-5" />
               {notifications > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-violation text-xs text-white flex items-center justify-center">
                   {notifications}
@@ -200,7 +202,7 @@ export function AdminDashboard() {
               title="Log Out"
               className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut strokeWidth={1} className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -211,7 +213,7 @@ export function AdminDashboard() {
         <div className="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+            <Search strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
             <input
               type="text"
               value={searchQuery}
@@ -243,7 +245,7 @@ export function AdminDashboard() {
                   viewMode === 'grid' ? 'bg-cyan/20 text-cyan' : 'text-white/40 hover:text-white'
                 )}
               >
-                <Grid3X3 className="h-4 w-4" />
+                <Grid3X3 strokeWidth={1} className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -252,12 +254,12 @@ export function AdminDashboard() {
                   viewMode === 'list' ? 'bg-cyan/20 text-cyan' : 'text-white/40 hover:text-white'
                 )}
               >
-                <LayoutList className="h-4 w-4" />
+                <LayoutList strokeWidth={1} className="h-4 w-4" />
               </button>
             </div>
 
             <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
-              <Download className="h-4 w-4" />
+              <Download strokeWidth={1} className="h-4 w-4" />
               <span className="hidden sm:inline text-sm">Export</span>
             </button>
           </div>
@@ -300,7 +302,7 @@ export function AdminDashboard() {
                     disabled={!selectedExam || savingExam}
                     className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
                   >
-                    {selectedExam?.enabled ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4 text-warning" />}
+                    {selectedExam?.enabled ? <ToggleRight strokeWidth={1} className="h-4 w-4 text-white/60" /> : <ToggleLeft strokeWidth={1} className="h-4 w-4 text-warning" />}
                     {selectedExam?.enabled ? 'Disable Test' : 'Enable Test'}
                   </button>
                   <button
@@ -308,7 +310,7 @@ export function AdminDashboard() {
                     disabled={!selectedExam || savingExam}
                     className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
                   >
-                    <CalendarDays className="h-4 w-4 text-cyan" />
+                    <CalendarDays strokeWidth={1} className="h-4 w-4 text-cyan" />
                     {selectedExam?.requireFullscreen ? 'Fullscreen: ON' : 'Fullscreen: OFF'}
                   </button>
                 </div>
@@ -355,7 +357,7 @@ export function AdminDashboard() {
               <div className="space-y-3 rounded-xl border border-white/10 bg-navy-800/40 p-3">
                 <label className="text-xs text-text-secondary">Send Exam Email Notification</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                  <Mail strokeWidth={1} className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                   <input
                     type="text"
                     value={emailRecipients}
@@ -376,7 +378,7 @@ export function AdminDashboard() {
                   disabled={!selectedExam}
                   className="flex items-center gap-2 rounded-lg bg-cyan px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-cyan-light disabled:opacity-60"
                 >
-                  <SendHorizontal className="h-4 w-4" />
+                  <SendHorizontal strokeWidth={1} className="h-4 w-4" />
                   Send Email
                 </button>
               </div>
@@ -410,7 +412,7 @@ export function AdminDashboard() {
                         <td className="px-3 py-2">
                           <span className={cn(
                             'rounded-full px-2 py-0.5 text-xs',
-                            student.status === 'online' && 'bg-success/20 text-success',
+                            student.status === 'online' && 'bg-white/20/20 text-white/60',
                             student.status === 'violation' && 'bg-violation/20 text-violation',
                             student.status === 'away' && 'bg-warning/20 text-warning',
                             student.status === 'offline' && 'bg-white/10 text-white/60'
@@ -428,7 +430,10 @@ export function AdminDashboard() {
           </section>
 
           {viewMode === 'grid' ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div
+              className="grid gap-1"
+              style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(250px, 1fr))` }}
+            >
               {filteredStudents.map((student) => (
                 <StudentGridCard
                   key={student.sessionId}
@@ -451,7 +456,7 @@ export function AdminDashboard() {
 
           {filteredStudents.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 text-text-secondary">
-              <Users className="h-12 w-12 mb-4 opacity-30" />
+              <Users strokeWidth={1} className="h-12 w-12 mb-4 opacity-30" />
               <p>No students found</p>
             </div>
           )}
@@ -462,7 +467,7 @@ export function AdminDashboard() {
           <div className="p-4 border-b border-white/5">
             <div className="flex items-center justify-between">
               <h3 className="font-medium text-white flex items-center gap-2">
-                <Activity className="h-4 w-4 text-cyan" />
+                <Activity strokeWidth={1} className="h-4 w-4 text-cyan" />
                 Violation Timeline
               </h3>
               <span className="text-xs text-text-secondary">{violations.length} events</span>
@@ -491,7 +496,7 @@ export function AdminDashboard() {
                       'h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0',
                       violation.severity === 'high' ? 'bg-violation/20' : 'bg-warning/20'
                     )}>
-                      <AlertTriangle className={cn(
+                      <AlertTriangle strokeWidth={1} className={cn(
                         'h-4 w-4',
                         violation.severity === 'high' ? 'text-violation' : 'text-warning'
                       )} />
@@ -537,7 +542,7 @@ export function AdminDashboard() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Detection Latency</span>
-                <span className="text-success">&lt; 800ms</span>
+                <span className="text-white/60">&lt; 800ms</span>
               </div>
             </div>
           </div>
@@ -567,7 +572,7 @@ function StatBadge({ label, value, color }: StatBadgeProps) {
     <div className="flex items-center gap-2">
       <span className={cn(
         'h-2 w-2 rounded-full',
-        color === 'success' && 'bg-success',
+        color === 'success' && 'bg-white/20',
         color === 'warning' && 'bg-warning',
         color === 'violation' && 'bg-violation'
       )} />
@@ -603,7 +608,7 @@ function StudentGridCard({ student, onClick }: StudentGridCardProps) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Users className="h-12 w-12 text-white/20" />
+            <Users strokeWidth={1} className="h-12 w-12 text-white/20" />
           </div>
         )}
         
@@ -611,7 +616,7 @@ function StudentGridCard({ student, onClick }: StudentGridCardProps) {
         <div className="absolute top-2 left-2 flex items-center gap-2">
           <span className={cn(
             'h-2.5 w-2.5 rounded-full',
-            student.status === 'online' && 'bg-success animate-pulse',
+            student.status === 'online' && 'bg-white/20 animate-pulse',
             student.status === 'away' && 'bg-warning',
             student.status === 'violation' && 'bg-violation animate-pulse',
             student.status === 'offline' && 'bg-white/30'
@@ -624,7 +629,7 @@ function StudentGridCard({ student, onClick }: StudentGridCardProps) {
         {/* Violation Badge */}
         {student.violationCount > 0 && (
           <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded bg-violation/90 text-white text-xs">
-            <AlertTriangle className="h-3 w-3" />
+            <AlertTriangle strokeWidth={1} className="h-3 w-3" />
             {student.violationCount}
           </div>
         )}
@@ -645,7 +650,7 @@ function StudentGridCard({ student, onClick }: StudentGridCardProps) {
         <div className="flex items-center justify-between mt-2 text-xs text-text-secondary">
           <span>{getRelativeTime(student.joinTime)}</span>
           <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
+            <Clock strokeWidth={1} className="h-3 w-3" />
             {getRelativeTime(student.lastActivity)}
           </span>
         </div>
@@ -679,12 +684,12 @@ function StudentListRow({ student, onClick }: StudentListRowProps) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Users className="h-6 w-6 text-white/20" />
+            <Users strokeWidth={1} className="h-6 w-6 text-white/20" />
           </div>
         )}
         <span className={cn(
           'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-navy-900',
-          student.status === 'online' && 'bg-success',
+          student.status === 'online' && 'bg-white/20',
           student.status === 'away' && 'bg-warning',
           student.status === 'violation' && 'bg-violation',
           student.status === 'offline' && 'bg-white/30'
@@ -697,7 +702,7 @@ function StudentListRow({ student, onClick }: StudentListRowProps) {
           <h4 className="font-medium text-white">{student.studentName}</h4>
           {student.violationCount > 0 && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-violation/20 text-violation text-xs">
-              <AlertTriangle className="h-3 w-3" />
+              <AlertTriangle strokeWidth={1} className="h-3 w-3" />
               {student.violationCount}
             </span>
           )}
@@ -709,7 +714,7 @@ function StudentListRow({ student, onClick }: StudentListRowProps) {
       <div className="hidden sm:block">
         <span className={cn(
           'px-3 py-1 rounded-full text-xs font-medium',
-          student.status === 'online' && 'bg-success/20 text-success',
+          student.status === 'online' && 'bg-white/20/20 text-white/60',
           student.status === 'away' && 'bg-warning/20 text-warning',
           student.status === 'violation' && 'bg-violation/20 text-violation',
           student.status === 'offline' && 'bg-white/10 text-white/60'
@@ -726,10 +731,10 @@ function StudentListRow({ student, onClick }: StudentListRowProps) {
       {/* Actions */}
       <div className="flex items-center gap-2">
         <button className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors">
-          <Video className="h-4 w-4" />
+          <Video strokeWidth={1} className="h-4 w-4" />
         </button>
         <button className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors">
-          <MoreVertical className="h-4 w-4" />
+          <MoreVertical strokeWidth={1} className="h-4 w-4" />
         </button>
       </div>
     </motion.div>

@@ -112,7 +112,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-white/20" />
+                      <User strokeWidth={1} className="h-6 w-6 text-white/20" />
                     </div>
                   )}
                   <span className={cn(
@@ -141,7 +141,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                   anomalyScore > 40 ? 'bg-warning/20 text-warning' :
                   'bg-success/20 text-success'
                 )}>
-                  <Activity className="h-4 w-4" />
+                  <Activity strokeWidth={1} className="h-4 w-4" />
                   <span className="text-sm font-medium">Anomaly: {anomalyScore}%</span>
                 </div>
 
@@ -150,7 +150,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                   onClick={() => setShowTerminateConfirm(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violation/20 text-violation hover:bg-violation/30 transition-colors"
                 >
-                  <Power className="h-4 w-4" />
+                  <Power strokeWidth={1} className="h-4 w-4" />
                   <span className="text-sm font-medium">Terminate</span>
                 </button>
 
@@ -158,7 +158,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                   onClick={onClose}
                   className="h-10 w-10 rounded-lg bg-white/5 flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X strokeWidth={1} className="h-5 w-5" />
                 </button>
               </div>
             </div>
@@ -196,7 +196,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                     <div className="glass-card overflow-hidden">
                       <div className="flex items-center justify-between p-3 border-b border-white/10">
                         <div className="flex items-center gap-2">
-                          <Video className="h-4 w-4 text-cyan" />
+                          <Video strokeWidth={1} className="h-4 w-4 text-cyan" />
                           <span className="text-sm font-medium text-white">Webcam Feed</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -213,7 +213,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <User className="h-16 w-16 text-white/20" />
+                            <User strokeWidth={1} className="h-16 w-16 text-white/20" />
                           </div>
                         )}
                         
@@ -238,7 +238,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                     <div className="glass-card overflow-hidden">
                       <div className="flex items-center justify-between p-3 border-b border-white/10">
                         <div className="flex items-center gap-2">
-                          <Smartphone className="h-4 w-4 text-cyan" />
+                          <Smartphone strokeWidth={1} className="h-4 w-4 text-cyan" />
                           <span className="text-sm font-medium text-white">Mobile Camera</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -249,7 +249,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                       <div className="relative aspect-video bg-navy-800">
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-center">
-                            <Smartphone className="h-12 w-12 text-white/20 mx-auto mb-2" />
+                            <Smartphone strokeWidth={1} className="h-12 w-12 text-white/20 mx-auto mb-2" />
                             <p className="text-sm text-white/40">Mobile Camera</p>
                             <p className="text-xs text-white/30 mt-1">Rear Camera • Gyro Active</p>
                           </div>
@@ -318,7 +318,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                     <div className="space-y-4">
                       {violations.length === 0 ? (
                         <div className="text-center py-8 text-text-secondary">
-                          <CheckCircle className="h-12 w-12 mx-auto mb-2 text-success/50" />
+                          <CheckCircle strokeWidth={1} className="h-12 w-12 mx-auto mb-2 text-success/50" />
                           <p>No violations recorded</p>
                         </div>
                       ) : (
@@ -342,7 +342,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                               violation.severity === 'medium' ? 'bg-warning/20' :
                               'bg-cyan/20'
                             )}>
-                              <AlertTriangle className={cn(
+                              <AlertTriangle strokeWidth={1} className={cn(
                                 'h-5 w-5',
                                 violation.severity === 'high' ? 'text-violation' :
                                 violation.severity === 'medium' ? 'text-warning' :
@@ -394,7 +394,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                               className="w-full h-full object-cover opacity-80"
                             />
                           ) : (
-                            <Camera className="h-12 w-12 text-white/20" />
+                            <Camera strokeWidth={1} className="h-12 w-12 text-white/20" />
                           )}
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="px-3 py-1.5 rounded bg-violation/80 text-white text-xs font-medium">
@@ -429,7 +429,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                   <div className="glass-card p-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-medium text-white flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4 text-cyan" />
+                        <BarChart3 strokeWidth={1} className="h-4 w-4 text-cyan" />
                         Anomaly Score Trend
                       </h3>
                       <span className="text-xs text-text-secondary">Last 1 hour</span>
@@ -481,7 +481,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                     {/* Face Analysis */}
                     <div className="glass-card p-4">
                       <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-cyan" />
+                        <Brain strokeWidth={1} className="h-4 w-4 text-cyan" />
                         Face Analysis (AWS Rekognition)
                       </h3>
                       
@@ -553,7 +553,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                     {/* Object Detection */}
                     <div className="glass-card p-4">
                       <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
-                        <Eye className="h-4 w-4 text-cyan" />
+                        <Eye strokeWidth={1} className="h-4 w-4 text-cyan" />
                         Object Detection
                       </h3>
                       
@@ -614,7 +614,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="h-12 w-12 rounded-full bg-violation/20 flex items-center justify-center">
-                        <Triangle className="h-6 w-6 text-violation" />
+                        <Triangle strokeWidth={1} className="h-6 w-6 text-violation" />
                       </div>
                       <div>
                         <h3 className="font-sora text-lg font-bold text-white">Terminate Session?</h3>

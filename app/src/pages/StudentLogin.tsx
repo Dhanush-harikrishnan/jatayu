@@ -53,7 +53,7 @@ export function StudentLogin() {
             Email Address
           </label>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+            <Mail strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
             <input
               type="email"
               value={email}
@@ -72,7 +72,7 @@ export function StudentLogin() {
             Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+            <Lock strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
@@ -89,7 +89,7 @@ export function StudentLogin() {
               className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? <EyeOff strokeWidth={1} className="h-5 w-5" /> : <Eye strokeWidth={1} className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -120,7 +120,7 @@ export function StudentLogin() {
               exit={{ opacity: 0, y: -10 }}
               className="flex items-center gap-2 rounded-lg bg-violation/10 p-3 text-sm text-violation border border-violation/20"
             >
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <AlertCircle strokeWidth={1} className="h-4 w-4 flex-shrink-0" />
               {error}
             </motion.div>
           )}
@@ -135,7 +135,7 @@ export function StudentLogin() {
               exit={{ opacity: 0, y: -10 }}
               className="flex items-center gap-2 rounded-lg bg-success/10 p-3 text-sm text-success border border-success/20"
             >
-              <CheckCircle className="h-4 w-4 flex-shrink-0" />
+              <CheckCircle strokeWidth={1} className="h-4 w-4 flex-shrink-0" />
               Login successful! Redirecting...
             </motion.div>
           )}
@@ -159,7 +159,7 @@ export function StudentLogin() {
           ) : (
             <>
               Sign In
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight strokeWidth={1} className="h-4 w-4" />
             </>
           )}
         </button>
