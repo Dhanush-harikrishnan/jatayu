@@ -218,20 +218,11 @@ export const awsService = {
     }
   },
 
-  logViolationEvent: async (
-    sessionId: string,
-    timestamp: string,
-    violationType: string,
-    s3Key: string,
-    metadata?: any,
-    context?: { userId?: string; studentName?: string; examId?: string }
-  ) => {
-    // Use a unique EventTime (with ms suffix) to avoid overwriting events at the same millisecond.
-    // Matches table schema: SessionId (PK) + EventTime (SK).
-    const uniqueEventTime = `${timestamp.replace(/Z$/, '')}.${Date.now() % 1000}Z`;
+    const uniqueId = `${sessionId}_${timestamp}_${Math.random().toString(36).substring(2, 7)}`;
     const item: any = {
+      id: { S: uniqueId }, // The actual Partition Key found in DynamoDB
       SessionId: { S: sessionId },
-      EventTime: { S: uniqueEventTime },
+      EventTime: { S: timestamp },
       ViolationType: { S: violationType },
       EvidenceKey: { S: s3Key },
     };
