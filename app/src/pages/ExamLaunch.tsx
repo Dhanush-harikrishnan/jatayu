@@ -130,6 +130,45 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     }
   }, [currentStep, isPaired, examId]);
 
+  // Listen for mobile-paired socket event so desktop auto-detects pairing
+  useEffect(() => {
+    if (currentStep !== 1 || isPaired) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    let socket: any = null;
+    const connectSocket = async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        socket = io(API_URL, {
+          transports: ['websocket'],
+          auth: { token },
+        });
+
+        socket.on('mobile-paired', () => {
+          console.log('Mobile device paired via socket!');
+          setIsPaired(true);
+        });
+
+        socket.on('connect_error', (err: any) => {
+          console.error('Desktop pairing socket error:', err.message);
+        });
+      } catch (err) {
+        console.error('Failed to connect pairing socket:', err);
+      }
+    };
+
+    connectSocket();
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [currentStep, isPaired]);
+
   // Request camera permission
   useEffect(() => {
     if (currentStep === 2 && cameraPermission === null) {
@@ -766,7 +805,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     <ThemeProvider>
                       <FaceLivenessDetector
                         sessionId={livenessSessionId}
-                        region="ap-south-1"
+                        region={import.meta.env.VITE_AWS_REGION || "ap-south-1"}
                         onAnalysisComplete={handleLivenessAnalysisComplete}
                         onError={(e) => {
                           const msg = (e as any)?.message || 'Face liveness stream failed';

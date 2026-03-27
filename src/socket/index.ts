@@ -72,10 +72,19 @@ export const initializeSocketServer = (server: HttpServer) => {
     registerWebRTCHandlers(io, socket, roomName);
     registerTelemetryHandlers(io, socket, roomName, engine);
 
+    // Listen for mobile-paired event and broadcast to the room
+    socket.on('mobile-paired', (data: any) => {
+      logger.info(`Mobile device paired in session ${sessionId}`);
+      // Broadcast to all other clients in the room (i.e., the primary/desktop)
+      socket.to(roomName).emit('mobile-paired', data);
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.id}`);
       if (role === 'primary') {
         sessionRegistry.touch(sessionId, 'offline');
+        // Notify all devices in the session that the exam has ended
+        io.to(roomName).emit('exam-ended', { timestamp: Date.now() });
       }
       // Clean up engine if all clients in session disconnected
       const clientsInRoom = io.sockets.adapter.rooms.get(roomName)?.size || 0;

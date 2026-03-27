@@ -51,7 +51,8 @@ function App() {
     if (path.startsWith('/mobile-pair')) {
       const searchParams = new URLSearchParams(window.location.search);
       const code = searchParams.get('code') || undefined;
-      return <MobileCamera pairingCode={code} />;
+      const token = searchParams.get('token') || undefined;
+      return <MobileCamera pairingCode={code} pairingToken={token} />;
     }
     
     // Mobile PWA route
