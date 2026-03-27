@@ -72,9 +72,18 @@ export const awsService = {
   detectLabels: async (imageBytes: Uint8Array) => {
     const command = new DetectLabelsCommand({
       Image: { Bytes: imageBytes },
-      MinConfidence: config.thresholds.rekognitionConfidence,
+      MinConfidence: 50, // Temporarily lower to 50 internally to see more data in logs
     });
-    return rekognitionClient.send(command);
+    const res = await rekognitionClient.send(command);
+    if (res.Labels && res.Labels.length > 0) {
+      logger.info(`[Rekognition] Detected labels: ${res.Labels.map(l => `${l.Name}(${l.Confidence?.toFixed(1)}%)`).join(', ')}`);
+    }
+    // Still filter by the configured threshold for the actual result
+    const threshold = config.thresholds.rekognitionConfidence || 80;
+    return {
+        ...res,
+        Labels: res.Labels?.filter(l => (l.Confidence ?? 0) >= threshold)
+    };
   },
 
   uploadEvidenceToS3: async (key: string, base64Data: string) => {
