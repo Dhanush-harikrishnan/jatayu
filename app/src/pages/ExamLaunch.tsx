@@ -27,6 +27,7 @@ const STEPS = [
 export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [pairingCode, setPairingCode] = useState('');
+  const [pairingToken, setPairingToken] = useState<string | null>(null);
   const [isPaired, setIsPaired] = useState(false);
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
@@ -113,10 +114,13 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       const pairDevice = async () => {
         try {
           // For local/dev we generate a pairing token without requiring SES permission.
-          await fetchApi(`/exam/${examId}/pair`, {
+          const pairRes = await fetchApi(`/exam/${examId}/pair`, {
             method: 'POST',
             body: JSON.stringify({ email: 'student@university.edu', sendEmail: false }),
           });
+          if (pairRes?.pairingToken) {
+            setPairingToken(pairRes.pairingToken);
+          }
         } catch (err) {
           console.error("Pairing API error:", err);
         }
@@ -311,8 +315,13 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
 
   const refreshPairingCode = () => {
     setPairingCode(generatePairingCode());
+    setPairingToken(null);
     setIsPaired(false);
   };
+
+  const pairingQrValue = pairingToken
+    ? `${window.location.origin}/mobile-pair?token=${pairingToken}&exam=${examId}`
+    : `${window.location.origin}/mobile-pair?code=${pairingCode}&exam=${examId}`;
 
   return (
     <div className="min-h-screen bg-navy-900">
@@ -492,7 +501,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     <h3 className="font-medium text-white mb-4">Scan QR Code</h3>
                     <div className="relative p-4 bg-white rounded-xl">
                       <QRCodeSVG 
-                        value={`https://secureguard.pro/mobile-pair?code=${pairingCode}&exam=${examId}`}
+                        value={pairingQrValue}
                         size={200}
                         level="H"
                       />
@@ -507,7 +516,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                       )}
                     </div>
                     <p className="mt-4 text-sm text-text-secondary text-center">
-                      Open camera app and scan to pair automatically
+                      Open mobile app and scan to pair automatically
                     </p>
                     
                     {!isPaired && (
