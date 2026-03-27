@@ -620,7 +620,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                           </p>
                           <p className="text-sm text-text-secondary">
                             {isPaired 
-                              ? 'iPhone 13 Pro - Connected' 
+                              ? 'Mobile Device - Connected' 
                               : 'Keep this page open while pairing'}
                           </p>
                         </div>
@@ -761,7 +761,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     <StatusCheckItem
                       label="Mobile Camera"
                       status={isPaired}
-                      successText="iPhone 13 Pro connected"
+                      successText="Mobile device connected"
                       errorText="Not connected"
                     />
                   </div>

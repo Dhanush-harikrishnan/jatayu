@@ -144,9 +144,7 @@ export function AdminDashboard() {
 
   const handleStudentClick = (student: StudentCard) => {
     setSelectedStudent(student);
-    if (student.violationCount > 0) {
-      setShowViolationModal(true);
-    }
+    setShowViolationModal(true);
   };
 
   const handleTerminate = (studentId: string) => {

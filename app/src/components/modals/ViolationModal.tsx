@@ -250,7 +250,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-center">
                             <Smartphone className="h-12 w-12 text-white/20 mx-auto mb-2" />
-                            <p className="text-sm text-white/40">iPhone 13 Pro</p>
+                            <p className="text-sm text-white/40">Mobile Camera</p>
                             <p className="text-xs text-white/30 mt-1">Rear Camera • Gyro Active</p>
                           </div>
                         </div>
