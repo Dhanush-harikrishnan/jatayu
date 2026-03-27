@@ -8,6 +8,7 @@ import {
 import { cn, getRelativeTime } from '@/lib/utils';
 import type { StudentCard, Violation } from '@/types';
 import { ViolationModal } from '@/components/modals/ViolationModal';
+import { CreateExamModal } from '@/components/modals/CreateExamModal';
 import { fetchApi } from '@/lib/api';
 
 // Empty initial states
@@ -38,7 +39,18 @@ export function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedStudent, setSelectedStudent] = useState<StudentCard | null>(null);
   const [showViolationModal, setShowViolationModal] = useState(false);
+  const [showCreateExamModal, setShowCreateExamModal] = useState(false);
   const [notifications] = useState(3);
+
+  const fetchExams = async () => {
+    const examsRes = await fetchApi('/dashboard/admin/exams');
+    if (examsRes.success && examsRes.data) {
+      setExamConfigs(examsRes.data);
+      if (!selectedExamId && examsRes.data.length > 0) {
+        setSelectedExamId(examsRes.data[0].id);
+      }
+    }
+  };
 
   // Poll real dashboard backend
   useEffect(() => {
@@ -271,7 +283,15 @@ export function AdminDashboard() {
           <section className="mb-5 rounded-2xl border border-cyan/20 bg-cyan/5 p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h3 className="font-sora text-base font-semibold text-white">Exam Controls</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="font-sora text-base font-semibold text-white">Exam Controls</h3>
+                  <button
+                    onClick={() => setShowCreateExamModal(true)}
+                    className="flex items-center gap-1.5 rounded bg-cyan/20 px-2 py-1 text-xs font-medium text-cyan hover:bg-cyan/30 transition-colors"
+                  >
+                    + New Exam
+                  </button>
+                </div>
                 <p className="text-xs text-text-secondary">Enable tests, set timing, require fullscreen, and notify students</p>
               </div>
               {adminActionMessage && (
@@ -551,6 +571,12 @@ export function AdminDashboard() {
         student={selectedStudent}
         violations={violations.filter(v => v.sessionId === selectedStudent?.sessionId)}
         onTerminate={handleTerminate}
+      />
+
+      <CreateExamModal
+        isOpen={showCreateExamModal}
+        onClose={() => setShowCreateExamModal(false)}
+        onExamCreated={fetchExams}
       />
     </div>
   );

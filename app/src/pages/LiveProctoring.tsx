@@ -28,15 +28,53 @@ interface Violation {
   evidenceKey: string;
 }
 
-const QUESTIONS = [
-  { id: 1, text: "What is the primary function of a reverse proxy?", options: ["Load balancing & security", "Database indexing", "Compiling backend code", "Direct network routing"], correct: 0 },
-  { id: 2, text: "Which HTTP method is idempotent according to REST principles?", options: ["POST", "PATCH", "PUT", "CONNECT"], correct: 2 },
-  { id: 3, text: "What is the worst-case time complexity of binary search?", options: ["O(1)", "O(n)", "O(log n)", "O(n^2)"], correct: 2 },
-  { id: 4, text: "Which AWS service is optimized for NoSQL key-value high-throughput storage?", options: ["Amazon RDS", "Amazon DynamoDB", "Amazon S3", "Amazon Redshift"], correct: 1 },
-  { id: 5, text: "What does CORS stand for in web security context?", options: ["Cross-Origin Resource Sharing", "Centralized Object Routing System", "Computer Operated Relay Server", "Core Operations Regression Suite"], correct: 0 }
-];
+const QUESTION_BANK: Record<string, { id: number; text: string; options: string[]; correct: number }[]> = {
+  default: [
+    { id: 1, text: "What is the primary function of a reverse proxy?", options: ["Load balancing & security", "Database indexing", "Compiling backend code", "Direct network routing"], correct: 0 },
+    { id: 2, text: "Which HTTP method is idempotent according to REST principles?", options: ["POST", "PATCH", "PUT", "CONNECT"], correct: 2 },
+    { id: 3, text: "What is the worst-case time complexity of binary search?", options: ["O(1)", "O(n)", "O(log n)", "O(n^2)"], correct: 2 },
+    { id: 4, text: "Which AWS service is optimized for NoSQL key-value high-throughput storage?", options: ["Amazon RDS", "Amazon DynamoDB", "Amazon S3", "Amazon Redshift"], correct: 1 },
+    { id: 5, text: "What does CORS stand for in web security context?", options: ["Cross-Origin Resource Sharing", "Centralized Object Routing System", "Computer Operated Relay Server", "Core Operations Regression Suite"], correct: 0 }
+  ],
+  "PRACTICE-001": [
+    { id: 1, text: "Which layer of the OSI model handles IP addressing?", options: ["Data Link", "Network", "Transport", "Session"], correct: 1 },
+    { id: 2, text: "What is the default port for HTTPS?", options: ["80", "21", "443", "8080"], correct: 2 },
+    { id: 3, text: "Which protocol converts a domain name to an IP address?", options: ["DHCP", "DNS", "ARP", "FTP"], correct: 1 },
+    { id: 4, text: "What does TCP stand for?", options: ["Transfer Control Protocol", "Transmission Control Protocol", "Tunneling Communication Protocol", "Terminal Control Protocol"], correct: 1 },
+    { id: 5, text: "Which device operates at Layer 3 of the OSI model?", options: ["Switch", "Hub", "Router", "Repeater"], correct: 2 },
+  ],
+  "PRACTICE-002": [
+    { id: 1, text: "What is a context switch in operating systems?", options: ["Changing user accounts", "Saving/restoring process state when switching CPU", "Switching between disk partitions", "Resetting memory buffers"], correct: 1 },
+    { id: 2, text: "Which scheduling algorithm gives the shortest average waiting time?", options: ["FCFS", "Round Robin", "SJF (Shortest Job First)", "Priority Scheduling"], correct: 2 },
+    { id: 3, text: "What is a deadlock in OS?", options: ["A crashed process", "Circular waiting for resources among processes", "Memory overflow", "Disk failure"], correct: 1 },
+    { id: 4, text: "Which memory allocation technique avoids external fragmentation?", options: ["Best Fit", "Worst Fit", "First Fit", "Paging"], correct: 3 },
+    { id: 5, text: "What is the purpose of a semaphore?", options: ["Manage disk I/O", "Control process synchronization", "Allocate virtual memory", "Handle interrupts"], correct: 1 },
+  ],
+  "PRACTICE-003": [
+    { id: 1, text: "Which normal form eliminates transitive dependencies?", options: ["1NF", "2NF", "3NF", "BCNF"], correct: 2 },
+    { id: 2, text: "What SQL clause is used to filter grouped results?", options: ["WHERE", "HAVING", "GROUP BY", "FILTER"], correct: 1 },
+    { id: 3, text: "Which type of join returns only matching rows from both tables?", options: ["LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL OUTER JOIN"], correct: 2 },
+    { id: 4, text: "What is an index in a database?", options: ["A backup copy of data", "A data structure to speed up queries", "A foreign key constraint", "A stored procedure"], correct: 1 },
+    { id: 5, text: "What does ACID stand for in database transactions?", options: ["Atomicity, Consistency, Isolation, Durability", "Access, Control, Integrity, Data", "Aggregate, Commit, Index, Delete", "None of the above"], correct: 0 },
+  ],
+  "PRACTICE-004": [
+    { id: 1, text: "What is a Python list comprehension?", options: ["A for loop inside a function", "An expression to create lists concisely", "A type of dictionary", "A class method"], correct: 1 },
+    { id: 2, text: "Which keyword is used to define a generator function in Python?", options: ["return", "async", "yield", "lambda"], correct: 2 },
+    { id: 3, text: "What does the *args parameter do in Python?", options: ["Passes keyword arguments", "Passes a variable number of positional arguments", "Defines default arguments", "Imports a module"], correct: 1 },
+    { id: 4, text: "What is the output of: type([]) in Python?", options: ["<class 'tuple'>", "<class 'dict'>", "<class 'set'>", "<class 'list'>"], correct: 3 },
+    { id: 5, text: "Which Python data structure is immutable?", options: ["List", "Dictionary", "Tuple", "Set"], correct: 2 },
+  ],
+  "PRACTICE-005": [
+    { id: 1, text: "What does IaaS stand for in cloud computing?", options: ["Internet as a Service", "Infrastructure as a Service", "Integration as a Service", "Intelligence as a Service"], correct: 1 },
+    { id: 2, text: "Which AWS service is used for serverless compute?", options: ["EC2", "ECS", "Lambda", "Fargate"], correct: 2 },
+    { id: 3, text: "What is the purpose of an Auto Scaling Group in AWS?", options: ["Database replication", "Automatically adjust compute capacity based on demand", "Load balancing across regions", "Encrypt S3 buckets"], correct: 1 },
+    { id: 4, text: "Which cloud deployment model offers maximum control over infrastructure?", options: ["Public Cloud", "Hybrid Cloud", "Community Cloud", "Private Cloud"], correct: 3 },
+    { id: 5, text: "What is the primary benefit of a CDN (Content Delivery Network)?", options: ["Reduced server costs", "Improved compute performance", "Reduced latency by serving content from edge locations", "Increased database throughput"], correct: 2 },
+  ],
+};
 
-export function LiveProctoring({ examId = 'exam-1' }: LiveProctoringProps) {
+export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
+  const QUESTIONS = QUESTION_BANK[examId] || QUESTION_BANK['default'];
   const [sessionTime, setSessionTime] = useState(() => {
     const savedPolicyRaw = localStorage.getItem(`examPolicy:${examId}`);
     if (!savedPolicyRaw) return 3600;

@@ -45,6 +45,76 @@ const examConfigs = new Map<string, ExamConfig>([
       requireFullscreen: true,
     },
   ],
+  [
+    'PRACTICE-001',
+    {
+      id: 'PRACTICE-001',
+      title: 'Practice: Networking Basics',
+      description: 'Test your knowledge of fundamental networking concepts, protocols, and architecture.',
+      totalQuestions: 5,
+      instructions: ['This is a practice test — no proctoring violations will count', 'Take your time to review each question'],
+      duration: 15,
+      startTime: new Date().toISOString(),
+      enabled: true,
+      requireFullscreen: false,
+    },
+  ],
+  [
+    'PRACTICE-002',
+    {
+      id: 'PRACTICE-002',
+      title: 'Practice: Operating Systems',
+      description: 'Memory management, process scheduling, file systems and OS fundamentals.',
+      totalQuestions: 5,
+      instructions: ['Practice exam — all features are unlocked', 'Answers are not graded'],
+      duration: 15,
+      startTime: new Date().toISOString(),
+      enabled: true,
+      requireFullscreen: false,
+    },
+  ],
+  [
+    'PRACTICE-003',
+    {
+      id: 'PRACTICE-003',
+      title: 'Practice: Database Design',
+      description: 'SQL, relational models, normalization and database query optimization.',
+      totalQuestions: 5,
+      instructions: ['Practice exam', 'Use it to prepare for the main assessments'],
+      duration: 15,
+      startTime: new Date().toISOString(),
+      enabled: true,
+      requireFullscreen: false,
+    },
+  ],
+  [
+    'PRACTICE-004',
+    {
+      id: 'PRACTICE-004',
+      title: 'Practice: Python Programming',
+      description: 'Core Python syntax, data types, functions, and basic OOP concepts.',
+      totalQuestions: 5,
+      instructions: ['Practice exam', 'No live proctoring is applied for practice tests'],
+      duration: 15,
+      startTime: new Date().toISOString(),
+      enabled: true,
+      requireFullscreen: false,
+    },
+  ],
+  [
+    'PRACTICE-005',
+    {
+      id: 'PRACTICE-005',
+      title: 'Practice: Cloud Computing',
+      description: 'AWS, GCP, Azure services, cloud architecture, and deployment patterns.',
+      totalQuestions: 5,
+      instructions: ['Practice exam', 'Covers key cloud certification topics'],
+      duration: 15,
+      startTime: new Date().toISOString(),
+      enabled: true,
+      requireFullscreen: false,
+    },
+  ],
 ]);
 
 function resolveExamStatus(exam: ExamConfig): 'upcoming' | 'active' | 'completed' {
@@ -399,6 +469,38 @@ export const getStudentExams = async (req: Request, res: Response, next: NextFun
       requireFullscreen: exam.requireFullscreen,
     }));
     res.json({ success: true, data: exams });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createCustomExam = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id, title, description, duration, totalQuestions, instructions, requireFullscreen } = req.body;
+
+    if (!id || !title || !duration) {
+      return res.status(400).json({ success: false, message: 'ID, title, and duration are required' });
+    }
+
+    if (examConfigs.has(id)) {
+      return res.status(409).json({ success: false, message: `Exam with ID ${id} already exists` });
+    }
+
+    const newConfig: ExamConfig = {
+      id,
+      title,
+      description: description || '',
+      duration: Number(duration),
+      totalQuestions: Number(totalQuestions) || 10,
+      instructions: Array.isArray(instructions) ? instructions : (instructions ? [instructions] : []),
+      startTime: req.body.startTime || new Date().toISOString(),
+      enabled: req.body.enabled !== false,
+      requireFullscreen: requireFullscreen !== false,
+    };
+
+    examConfigs.set(id, newConfig);
+
+    res.json({ success: true, message: 'Custom exam created successfully', data: newConfig });
   } catch (error) {
     next(error);
   }
