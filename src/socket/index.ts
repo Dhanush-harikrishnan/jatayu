@@ -6,14 +6,16 @@ import { registerWebRTCHandlers } from './webrtcHandler';
 import { registerTelemetryHandlers } from './telemetryHandler';
 import { CorrelationEngine } from '../services/correlationEngine';
 import { sessionRegistry } from '../services/sessionRegistry';
+import { config } from '../config/env';
 
 export let io: SocketIOServer;
 
 export const initializeSocketServer = (server: HttpServer) => {
   io = new SocketIOServer(server, {
     cors: {
-      origin: '*',
+      origin: config.cors.allowedOrigins,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
     transports: ['websocket'], // As per explicit requirement
   });
