@@ -185,13 +185,6 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     }
   }, [currentStep, cameraPermission]);
 
-  // Release camera lock when leaving the verification step so Liveness check can use it
-  useEffect(() => {
-    if (currentStep !== 2 && mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      setMediaStream(null);
-    }
-  }, [currentStep, mediaStream]);
 
   // Attach stream to video element when it mounts
   useEffect(() => {
@@ -345,6 +338,13 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   };
 
   const handleNextStep = () => {
+    // If moving from Verification (Step 2) to Liveness Check (Step 3), synchronously 
+    // release the camera so FaceLivenessDetector can immediately grab it.
+    if (currentStep === 2 && mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      setMediaStream(null);
+    }
+
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(c => c + 1);
     }
