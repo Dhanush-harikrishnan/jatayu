@@ -341,8 +341,21 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     // If moving from Verification (Step 2) to Liveness Check (Step 3), synchronously 
     // release the camera so FaceLivenessDetector can immediately grab it.
     if (currentStep === 2 && mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
       setMediaStream(null);
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      // Add a 500ms delay to allow OS hardware to properly unbind the camera
+      setTimeout(() => {
+        if (currentStep < STEPS.length - 1) {
+          setCurrentStep(c => c + 1);
+        }
+      }, 500);
+      return;
     }
 
     if (currentStep < STEPS.length - 1) {
@@ -808,8 +821,24 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                   <p className="mt-2 text-text-secondary">Please position your face in the oval to prove you're a real person.</p>
                 </div>
 
-                <div className="glass-card p-6 flex justify-center items-center bg-white">
-                  {livenessSessionId && !livenessPassed ? (
+                <div className="glass-card p-6 flex justify-center items-center bg-white min-h-[300px]">
+                  {!import.meta.env.VITE_AWS_COGNITO_IDENTITY_POOL_ID ? (
+                    <div className="flex flex-col items-center justify-center p-8 bg-violation/5 border border-violation/20 rounded-xl max-w-lg w-full">
+                      <AlertCircle className="h-10 w-10 text-violation mb-3" />
+                      <p className="text-xl font-bold text-navy-900 text-center">Missing AWS Configuration</p>
+                      <p className="text-sm text-navy-900/70 mt-2 text-center">
+                        The <code>VITE_AWS_COGNITO_IDENTITY_POOL_ID</code> environment variable is missing. This is required to stream video to AWS Rekognition. If you are on Vercel, please add it to your project settings.
+                      </p>
+                      {(import.meta.env.DEV || import.meta.env.VITE_ALLOW_LIVENESS_BYPASS === 'true' || !import.meta.env.VITE_AWS_COGNITO_IDENTITY_POOL_ID) && (
+                        <button
+                          onClick={() => setLivenessPassed(true)}
+                          className="mt-6 px-4 py-2 bg-navy-900 text-white rounded-lg hover:bg-navy-800 transition-colors"
+                        >
+                          Dev Bypass Liveness Check
+                        </button>
+                      )}
+                    </div>
+                  ) : livenessSessionId && !livenessPassed ? (
                     <ThemeProvider>
                       <FaceLivenessDetector
                         sessionId={livenessSessionId}
