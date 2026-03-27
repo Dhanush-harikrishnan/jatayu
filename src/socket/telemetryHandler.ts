@@ -6,6 +6,7 @@ import { logger } from '../logger';
 import { config } from '../config/env';
 
 const lastPrimaryEvidenceUploadAt = new Map<string, number>();
+const lastSecondaryEvidenceUploadAt = new Map<string, number>();
 
 export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: string, engine: CorrelationEngine) => {
   // Video Frame ingestion
@@ -52,25 +53,40 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
           evidenceKey,
         });
       } else if (role === 'secondary_camera') {
+        let evidenceKey: string | undefined;
+        const now = Date.now();
+        const lastUploadAt = lastSecondaryEvidenceUploadAt.get(sessionId) || 0;
+        
+        if (now - lastUploadAt >= config.thresholds.evidenceUploadIntervalMs) {
+          evidenceKey = `evidence/${sessionId}/secondary/${data.timestamp}.jpg`;
+          await awsService.uploadEvidenceToS3(evidenceKey, data.imageBase64);
+          lastSecondaryEvidenceUploadAt.set(sessionId, now);
+        }
+
         // Mobile camera -> Detect Labels
         const res = await awsService.detectLabels(buffer);
         const labels = res.Labels || [];
         const hasLaptopScreen = labels.some(l => l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor');
+        
         // Phone detection: fire into correlation engine so it is persisted to DynamoDB
         const phoneLabel = labels.find(l =>
           l.Name === 'Cell Phone' || l.Name === 'Mobile Phone' || l.Name === 'Phone' || l.Name === 'Smartphone'
         );
+        
         if (phoneLabel) {
           engine.addEvent({
             type: 'PHONE_DETECTED' as any,
             timestamp: data.timestamp,
             data: { label: phoneLabel.Name, confidence: phoneLabel.Confidence },
+            evidenceKey, // Link the snapshot
           });
         }
+
         engine.addEvent({
           type: 'MOBILE_FRAME',
           timestamp: data.timestamp,
-          data: { hasLaptopScreen }
+          data: { hasLaptopScreen },
+          evidenceKey, // Link the snapshot
         });
       }
     } catch (err) {
