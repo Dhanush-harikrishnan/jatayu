@@ -371,12 +371,12 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
           if (videoRef.current) {
             videoRef.current.srcObject = null;
           }
-          // Add a 100ms delay to allow OS hardware to properly unbind the camera
+          // Add a 500ms delay to allow OS hardware to properly unbind the camera
           setTimeout(() => {
             if (currentStep < STEPS.length - 1) {
               setCurrentStep(c => c + 1);
             }
-          }, 100);
+          }, 500);
         }
       };
 
