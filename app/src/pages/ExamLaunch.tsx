@@ -341,26 +341,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     // If moving from Verification (Step 2) to Liveness Check (Step 3), synchronously 
     // release the camera so FaceLivenessDetector can immediately grab it.
     if (currentStep === 2 && mediaStream) {
-      // 1. Capture final frame synchronously
-      let imageBase64: string | null = null;
-      try {
-        if (videoRef.current) {
-          const canvas = document.createElement('canvas');
-          const width = videoRef.current.videoWidth || 640;
-          const height = videoRef.current.videoHeight || 480;
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(videoRef.current, 0, 0, width, height);
-            imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to capture final setup snapshot:', err);
-      }
-
-      // 2. IMMEDIATELY and synchronously unbind the camera
+      // Synchronously release the camera so FaceLivenessDetector can grab it.
       mediaStream.getTracks().forEach(track => {
         track.stop();
         track.enabled = false;
@@ -369,22 +350,13 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-
-      // 3. Fire-and-forget the backend storage
-      if (imageBase64) {
-        fetchApi(`/exam/${examId}/analyze-setup-frame`, {
-          method: 'POST',
-          body: JSON.stringify({ imageBase64 })
-        }).catch(err => console.error('Final snapshot upload failed:', err));
-      }
-
-      // 4. Wait a guaranteed 500ms *after* tracks are stopped, then transition
+      
+      // Add a strict 500ms delay to allow OS hardware to properly unbind the camera
       setTimeout(() => {
         if (currentStep < STEPS.length - 1) {
           setCurrentStep(c => c + 1);
         }
       }, 500);
-
       return;
     }
 
