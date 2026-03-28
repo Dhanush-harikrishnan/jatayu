@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { cn, generatePairingCode } from '@/lib/utils';
 import { fetchApi } from '@/lib/api';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { FaceLivenessDetector } from '@aws-amplify/ui-react-liveness';
 import '@aws-amplify/ui-react/styles.css';
 import { ThemeProvider } from '@aws-amplify/ui-react';
@@ -286,6 +287,8 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
         try {
           const res = await fetchApi(`/exam/${examId}/create-liveness-session`, { method: 'POST' });
           if (res.sessionId) {
+            // Force fetch Guest credentials before mounting FaceLivenessDetector
+            await fetchAuthSession();
             setLivenessSessionId(res.sessionId);
             setLivenessError(null);
           } else {
