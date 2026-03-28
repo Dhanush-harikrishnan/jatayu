@@ -505,3 +505,63 @@ export const createCustomExam = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+export const terminateSession = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: 'Session ID is required' });
+    }
+
+    // 1. Delete all S3 evidence (primary + secondary + exam frames)
+    let s3Deleted = 0;
+    try {
+      s3Deleted = await awsService.deleteSessionEvidence(sessionId);
+    } catch (err: any) {
+      console.error(`[terminateSession] S3 cleanup failed: ${err?.message}`);
+    }
+
+    // 2. Delete all DynamoDB violation records
+    let dbDeleted = 0;
+    try {
+      dbDeleted = await awsService.deleteSessionViolations(sessionId);
+    } catch (err: any) {
+      console.error(`[terminateSession] DynamoDB cleanup failed: ${err?.message}`);
+    }
+
+    // 3. Emit session-terminated event to the student's room via socket
+    try {
+      const { io } = require('../socket');
+      if (io) {
+        const roomName = `session_${sessionId}`;
+        io.to(roomName).emit('session-terminated', {
+          reason: 'Admin terminated your session',
+          timestamp: Date.now(),
+        });
+      }
+    } catch (err: any) {
+      console.error(`[terminateSession] Socket emit failed: ${err?.message}`);
+    }
+
+    // 4. Remove correlation engine instance
+    try {
+      const { CorrelationEngine } = require('../services/correlationEngine');
+      CorrelationEngine.removeInstance(sessionId);
+    } catch (err: any) {
+      console.error(`[terminateSession] Engine removal failed: ${err?.message}`);
+    }
+
+    // 5. Update session registry
+    sessionRegistry.touch(sessionId, 'offline');
+
+    res.json({
+      success: true,
+      message: `Session ${sessionId} terminated. Deleted ${s3Deleted} S3 objects and ${dbDeleted} DynamoDB records.`,
+      s3Deleted,
+      dbDeleted,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

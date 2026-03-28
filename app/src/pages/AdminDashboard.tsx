@@ -161,10 +161,21 @@ export function AdminDashboard() {
     setShowViolationModal(true);
   };
 
-  const handleTerminate = (studentId: string) => {
-    setStudents(prev => prev.map(s => 
-      s.studentId === studentId ? { ...s, status: 'offline' } : s
-    ));
+  const handleTerminate = async (sessionId: string) => {
+    try {
+      const res = await fetchApi(`/dashboard/admin/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      if (res?.success) {
+        setStudents(prev => prev.filter(s => s.sessionId !== sessionId));
+        setViolations(prev => prev.filter(v => v.sessionId !== sessionId));
+        setAdminActionMessage(res.message || 'Session terminated successfully');
+        setTimeout(() => setAdminActionMessage(null), 4000);
+      }
+    } catch (err: any) {
+      setAdminActionMessage(err?.message || 'Failed to terminate session');
+      setTimeout(() => setAdminActionMessage(null), 4000);
+    }
     setShowViolationModal(false);
   };
 

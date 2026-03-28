@@ -53,47 +53,68 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
           evidenceKey,
         });
       } else if (role === 'secondary_camera') {
+        // Emit mobile feed to the primary camera in the same session room
+        socket.to(roomName).emit('mobile_feed_frame', { imageBase64: data.imageBase64 });
+
+        // Mobile camera -> Detect Labels
+        const res = await awsService.detectLabels(buffer);
+        const labels = res.Labels || [];
+
+        // Ignore Person/Human labels — the test-taker's body/hands are always visible
+        const filteredLabels = labels.filter(l =>
+          l.Name !== 'Person' && l.Name !== 'Human' && l.Name !== 'Face' && l.Name !== 'Head'
+        );
+
+        // Phone detection with stricter rules
+        const phoneLabel = filteredLabels.find(l =>
+          (l.Name === 'Cell Phone' || l.Name === 'Mobile Phone') && (l.Confidence ?? 0) > 75
+        );
+
+        // Count laptops (allow 1 — the student's own)
+        const laptopLabels = filteredLabels.filter(l =>
+          l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor'
+        );
+        // Use instances count if available, otherwise count distinct labels
+        const laptopCount = laptopLabels.reduce((count, l) => {
+          return count + Math.max(l.Instances?.length || 0, 1);
+        }, 0);
+        const hasLaptopScreen = laptopLabels.length > 0;
+
+        const hasViolation = !!phoneLabel || laptopCount > 1;
+
+        // Upload evidence: ALWAYS upload when a violation is detected, 
+        // otherwise respect the periodic interval
         let evidenceKey: string | undefined;
         const now = Date.now();
         const lastUploadAt = lastSecondaryEvidenceUploadAt.get(sessionId) || 0;
-        
-        if (now - lastUploadAt >= config.thresholds.evidenceUploadIntervalMs) {
+
+        if (hasViolation) {
+          // Force upload the violated frame so it's linked in DynamoDB
+          evidenceKey = `evidence/${sessionId}/secondary/${data.timestamp}.jpg`;
+          await awsService.uploadEvidenceToS3(evidenceKey, data.imageBase64);
+          lastSecondaryEvidenceUploadAt.set(sessionId, now);
+          logger.info(`[Mobile] Violation frame uploaded: ${evidenceKey}`);
+        } else if (now - lastUploadAt >= config.thresholds.evidenceUploadIntervalMs) {
+          // Periodic upload for non-violation frames
           evidenceKey = `evidence/${sessionId}/secondary/${data.timestamp}.jpg`;
           await awsService.uploadEvidenceToS3(evidenceKey, data.imageBase64);
           lastSecondaryEvidenceUploadAt.set(sessionId, now);
         }
 
-        // Emit mobile feed to the primary camera in the same session room
-        socket.to(sessionId).emit('mobile_feed_frame', { imageBase64: data.imageBase64 });
-
-        // Mobile camera -> Detect Labels
-        const res = await awsService.detectLabels(buffer);
-        const labels = res.Labels || [];
-        const hasLaptopScreen = labels.some(l => l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor');
-        
-        // Phone detection with stricter rules to ignore misclassified keyboards/laptops
-        const phoneLabel = labels.find(l =>
-          (l.Name === 'Cell Phone' || l.Name === 'Mobile Phone') && (l.Confidence ?? 0) > 75
-        );
-        
         if (phoneLabel) {
           engine.addEvent({
             type: 'PHONE_DETECTED' as any,
             timestamp: data.timestamp,
             data: { label: phoneLabel.Name, confidence: phoneLabel.Confidence },
-            evidenceKey, // Link the snapshot
+            evidenceKey, // Always linked since we force-uploaded above
           });
         }
-
-        // Count number of laptops
-        const laptopLabel = labels.find(l => l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor');
-        const laptopCount = laptopLabel?.Instances?.length || 0;
 
         engine.addEvent({
           type: 'MOBILE_FRAME',
           timestamp: data.timestamp,
           data: { hasLaptopScreen, laptopCount },
-          evidenceKey, // Link the snapshot
+          evidenceKey,
         });
       }
     } catch (err) {

@@ -14,7 +14,7 @@ interface ViolationModalProps {
   onClose: () => void;
   student: StudentCard | null;
   violations: Violation[];
-  onTerminate: (studentId: string) => void;
+  onTerminate: (sessionId: string) => void;
 }
 
 // Mock anomaly score data for chart
@@ -77,7 +77,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
   }, 0);
 
   const handleTerminate = () => {
-    onTerminate(student.studentId);
+    onTerminate(student.sessionId);
     setShowTerminateConfirm(false);
   };
 

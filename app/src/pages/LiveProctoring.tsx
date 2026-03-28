@@ -25,7 +25,7 @@ interface Violation {
   type: string;
   severity: 'low' | 'medium' | 'high';
   timestamp: string;
-  evidenceKey: string;
+  evidenceKey?: string;
 }
 
 const QUESTION_BANK: Record<string, { id: number; text: string; options: string[]; correct: number }[]> = {
@@ -139,6 +139,43 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
 
     socket.on('mobile_feed_frame', (data: { imageBase64: string }) => {
       setMobileFrame(data.imageBase64);
+    });
+
+    socket.on('mobile_violation', (data: { violationType: string; timestamp: string; s3Key?: string }) => {
+      const mobileDescriptions: Record<string, string> = {
+        'PHONE_DETECTED': 'Phone detected by secondary camera',
+        'MULTIPLE_LAPTOPS_DETECTED': 'Multiple laptops detected by secondary camera',
+        'PHONE_MOVEMENT_DETECTED': 'Significant phone movement detected',
+      };
+      const description = mobileDescriptions[data.violationType] || `Secondary camera: ${data.violationType}`;
+      const newViolation: Violation = {
+        id: `mobile_${Date.now()}`,
+        type: data.violationType,
+        severity: data.violationType === 'PHONE_DETECTED' ? 'high' : 'medium',
+        timestamp: data.timestamp,
+        evidenceKey: data.s3Key,
+      };
+      setRealViolations(prev => [newViolation, ...prev]);
+      addToast({
+        id: newViolation.id,
+        type: 'warning',
+        title: 'Secondary Camera Alert',
+        message: description,
+      });
+    });
+
+    socket.on('session-terminated', (data: { reason: string }) => {
+      addToast({
+        id: `terminated_${Date.now()}`,
+        type: 'error',
+        title: 'Session Terminated',
+        message: data.reason || 'Your exam session has been terminated by the administrator.',
+      });
+      // Force redirect after short delay
+      setTimeout(() => {
+        allowNavigationRef.current = true;
+        window.location.href = '/dashboard';
+      }, 3000);
     });
 
     socket.on('connect_error', (err) => {

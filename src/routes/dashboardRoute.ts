@@ -7,6 +7,7 @@ import {
 	updateAdminExamSettings,
 	sendAdminExamNotification,
 	createCustomExam,
+	terminateSession,
 } from '../controllers/dashboardController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
@@ -21,6 +22,7 @@ router.get('/admin/exams', requireRole(['admin']), getAdminExams);
 router.post('/admin/exams', requireRole(['admin']), createCustomExam);
 router.patch('/admin/exams/:examId/settings', requireRole(['admin']), updateAdminExamSettings);
 router.post('/admin/exams/:examId/notify', requireRole(['admin']), sendAdminExamNotification);
+router.delete('/admin/sessions/:sessionId', requireRole(['admin']), terminateSession);
 router.get('/student/exams', getStudentExams);
 
 export const dashboardRoutes = router;

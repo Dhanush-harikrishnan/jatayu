@@ -199,6 +199,15 @@ export class CorrelationEngine {
         timestamp: isoTimestamp,
         s3Key
       });
+
+      // Also emit to the student's session room so the primary screen shows the alert
+      if (isMobileViolation) {
+        io.to(`session_${this.sessionId}`).emit('mobile_violation', {
+          violationType,
+          timestamp: isoTimestamp,
+          s3Key,
+        });
+      }
     }
 
     // Clear events to prevent duplicate triggers for the same incident
