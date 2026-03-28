@@ -63,6 +63,9 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
           lastSecondaryEvidenceUploadAt.set(sessionId, now);
         }
 
+        // Emit mobile feed to the primary camera in the same session room
+        socket.to(sessionId).emit('mobile_feed_frame', { imageBase64: data.imageBase64 });
+
         // Mobile camera -> Detect Labels
         const res = await awsService.detectLabels(buffer);
         const labels = res.Labels || [];
@@ -82,14 +85,14 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
           });
         }
 
-        // Count number of people visible from the secondary camera angle
-        const personLabel = labels.find(l => l.Name === 'Person');
-        const personCount = personLabel?.Instances?.length || 0;
+        // Count number of laptops
+        const laptopLabel = labels.find(l => l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor');
+        const laptopCount = laptopLabel?.Instances?.length || 0;
 
         engine.addEvent({
           type: 'MOBILE_FRAME',
           timestamp: data.timestamp,
-          data: { hasLaptopScreen, personCount },
+          data: { hasLaptopScreen, laptopCount },
           evidenceKey, // Link the snapshot
         });
       }

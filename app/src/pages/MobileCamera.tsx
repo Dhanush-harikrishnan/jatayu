@@ -20,7 +20,7 @@ type ConnectionState = 'idle' | 'connecting' | 'positioning' | 'waiting' | 'capt
 export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('user');
   const [gyroData, setGyroData] = useState({ x: 0, y: 0, z: 0 });
   const [movementAlert, setMovementAlert] = useState(false);
   const [batteryLevel, setBatteryLevel] = useState(100);

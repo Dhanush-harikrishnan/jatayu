@@ -341,20 +341,47 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     // If moving from Verification (Step 2) to Liveness Check (Step 3), synchronously 
     // release the camera so FaceLivenessDetector can immediately grab it.
     if (currentStep === 2 && mediaStream) {
-      mediaStream.getTracks().forEach(track => {
-        track.stop();
-        track.enabled = false;
-      });
-      setMediaStream(null);
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      // Add a 500ms delay to allow OS hardware to properly unbind the camera
-      setTimeout(() => {
-        if (currentStep < STEPS.length - 1) {
-          setCurrentStep(c => c + 1);
+      const captureFinalSnapshot = async () => {
+        try {
+          if (videoRef.current) {
+            const canvas = document.createElement('canvas');
+            const width = videoRef.current.videoWidth || 640;
+            const height = videoRef.current.videoHeight || 480;
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(videoRef.current, 0, 0, width, height);
+              const imageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+              // Send final frame to get stored in backend before destroying camera
+              await fetchApi(`/exam/${examId}/analyze-setup-frame`, {
+                method: 'POST',
+                body: JSON.stringify({ imageBase64 })
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Failed to capture final setup snapshot:', err);
+        } finally {
+          mediaStream.getTracks().forEach(track => {
+            track.stop();
+            track.enabled = false;
+          });
+          setMediaStream(null);
+          if (videoRef.current) {
+            videoRef.current.srcObject = null;
+          }
+          // Add a 100ms delay to allow OS hardware to properly unbind the camera
+          setTimeout(() => {
+            if (currentStep < STEPS.length - 1) {
+              setCurrentStep(c => c + 1);
+            }
+          }, 100);
         }
-      }, 500);
+      };
+
+      // Execute without awaiting to keep UI responsive, the finally block will proceed
+      void captureFinalSnapshot();
       return;
     }
 
@@ -794,10 +821,10 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                   </button>
                   <button 
                     onClick={handleNextStep}
-                    disabled={cameraPermission !== true}
+                    disabled={cameraPermission !== true || setupFaceCheck !== 'detected'}
                     className={cn(
                       'btn-primary flex items-center gap-2',
-                      cameraPermission !== true && 'opacity-50 cursor-not-allowed'
+                      (cameraPermission !== true || setupFaceCheck !== 'detected') && 'opacity-50 cursor-not-allowed'
                     )}
                   >
                     Proceed to Liveness Check

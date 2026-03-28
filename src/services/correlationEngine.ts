@@ -148,11 +148,11 @@ export class CorrelationEngine {
       this.triggerCriticalViolation('PHONE_DETECTED');
     }
 
-    // Rule H: MULTIPLE_PERSONS_DETECTED (from mobile camera)
+    // Rule H: MULTIPLE_LAPTOPS_DETECTED (from mobile camera)
     const recentMobileFrames = windowEvents.filter(e => e.type === 'MOBILE_FRAME');
     const latestMobileFrame = recentMobileFrames.length > 0 ? recentMobileFrames[recentMobileFrames.length - 1] : null;
-    if (latestMobileFrame && (latestMobileFrame.data.personCount || 0) > 1) {
-      this.triggerCriticalViolation('MULTIPLE_PERSONS_DETECTED');
+    if (latestMobileFrame && (latestMobileFrame.data.laptopCount || 0) > 1) {
+      this.triggerCriticalViolation('MULTIPLE_LAPTOPS_DETECTED');
     }
   }
 
@@ -167,7 +167,7 @@ export class CorrelationEngine {
     const isoTimestamp = new Date().toISOString();
     // Use the last known evidence key; fall back to a placeholder so the event still persists.
     // Select evidence key: mobile violations should prefer mobile snapshots
-    const isMobileViolation = ['PHONE_DETECTED', 'PHONE_MOVEMENT_DETECTED'].includes(violationType);
+    const isMobileViolation = ['PHONE_DETECTED', 'PHONE_MOVEMENT_DETECTED', 'MULTIPLE_LAPTOPS_DETECTED'].includes(violationType);
     const s3Key = (isMobileViolation ? this.lastSecondaryEvidenceKey : this.lastPrimaryEvidenceKey) 
                 || this.lastPrimaryEvidenceKey 
                 || this.lastSecondaryEvidenceKey

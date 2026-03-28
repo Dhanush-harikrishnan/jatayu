@@ -112,6 +112,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mobileFrame, setMobileFrame] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -134,6 +135,10 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
     socket.on('connect', () => {
       console.log('LiveProctoring socket connected:', socket.id);
       socket.emit('exam-started-by-primary');
+    });
+
+    socket.on('mobile_feed_frame', (data: { imageBase64: string }) => {
+      setMobileFrame(data.imageBase64);
     });
 
     socket.on('connect_error', (err) => {
@@ -556,17 +561,21 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
             )}
           </div>
           
-          {/* Simulated Mobile Feed PiP */}
-          <div className="w-full aspect-video rounded-xl overflow-hidden bg-navy-800 border border-white/10 relative">
+          {/* Real Mobile Feed PiP */}
+          <div className="w-full aspect-video rounded-xl overflow-hidden bg-navy-800 border-2 border-cyan/30 shadow-[0_0_20px_rgba(0,240,255,0.1)] relative group">
+            {mobileFrame ? (
+              <img src={mobileFrame} alt="Mobile Camera Feed" className="w-full h-full object-cover" />
+            ) : (
              <div className="absolute inset-0 bg-gradient-to-br from-navy-700 to-navy-800 flex items-center justify-center">
-                <div className="text-center grayscale opacity-50">
-                    <Smartphone strokeWidth={1} className="h-8 w-8 text-white/40 mx-auto mb-2" />
-                    <p className="text-xs text-white/60">Secondary Camera Active</p>
+                <div className="text-center opacity-50">
+                    <Smartphone strokeWidth={1} className="h-8 w-8 text-white/40 mx-auto mb-2 animate-pulse" />
+                    <p className="text-xs text-white/60">Waiting for Secondary Camera...</p>
                 </div>
              </div>
+            )}
              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80">
-                <span className="h-1.5 w-1.5 rounded-full bg-white/20 animate-pulse" />
-                <span className="text-[10px] text-white/80 uppercase">iPhone 13</span>
+                <div className="w-2 h-2 rounded-full bg-cyan animate-pulse" />
+                <span className="text-[10px] text-white/80 font-medium tracking-wider uppercase">Secondary Feed</span>
             </div>
           </div>
 
