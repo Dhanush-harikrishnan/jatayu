@@ -74,9 +74,10 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         const laptopLabels = filteredLabels.filter(l =>
           l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor'
         );
-        // Use instances count if available, otherwise count distinct labels
-        const laptopCount = laptopLabels.reduce((count, l) => {
-          return count + Math.max(l.Instances?.length || 0, 1);
+        // Use instances count if available. Take the maximum across synonyms, 
+        // since Rekognition will return "Laptop", "Computer", and "Monitor" for the exact same object.
+        const laptopCount = laptopLabels.reduce((maxCount, l) => {
+          return Math.max(maxCount, l.Instances?.length || 1);
         }, 0);
         const hasLaptopScreen = laptopLabels.length > 0;
 
