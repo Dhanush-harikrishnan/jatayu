@@ -68,9 +68,9 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         const labels = res.Labels || [];
         const hasLaptopScreen = labels.some(l => l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor');
         
-        // Phone detection: fire into correlation engine so it is persisted to DynamoDB
+        // Phone detection with stricter rules to ignore misclassified keyboards/laptops
         const phoneLabel = labels.find(l =>
-          l.Name === 'Cell Phone' || l.Name === 'Mobile Phone' || l.Name === 'Phone' || l.Name === 'Smartphone'
+          (l.Name === 'Cell Phone' || l.Name === 'Mobile Phone') && (l.Confidence ?? 0) > 75
         );
         
         if (phoneLabel) {
@@ -82,10 +82,14 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
           });
         }
 
+        // Count number of people visible from the secondary camera angle
+        const personLabel = labels.find(l => l.Name === 'Person');
+        const personCount = personLabel?.Instances?.length || 0;
+
         engine.addEvent({
           type: 'MOBILE_FRAME',
           timestamp: data.timestamp,
-          data: { hasLaptopScreen },
+          data: { hasLaptopScreen, personCount },
           evidenceKey, // Link the snapshot
         });
       }

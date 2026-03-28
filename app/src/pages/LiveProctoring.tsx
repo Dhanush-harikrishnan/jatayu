@@ -133,6 +133,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
 
     socket.on('connect', () => {
       console.log('LiveProctoring socket connected:', socket.id);
+      socket.emit('exam-started-by-primary');
     });
 
     socket.on('connect_error', (err) => {

@@ -102,6 +102,14 @@ export const initializeSocketServer = (server: HttpServer) => {
       }
     });
 
+    // Explicit sync event to kick off mobile camera monitoring visually
+    socket.on('exam-started-by-primary', () => {
+      if (role === 'primary') {
+        logger.info(`Exam expressly started by primary in session ${sessionId}`);
+        io.to(roomName).emit('exam-started', { timestamp: Date.now() });
+      }
+    });
+
     socket.on('disconnect', () => {
       logger.info(`Socket disconnected: ${socket.id}`);
       if (role === 'primary') {

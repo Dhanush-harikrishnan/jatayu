@@ -147,6 +147,13 @@ export class CorrelationEngine {
     if (phoneEvents.length > 0) {
       this.triggerCriticalViolation('PHONE_DETECTED');
     }
+
+    // Rule H: MULTIPLE_PERSONS_DETECTED (from mobile camera)
+    const recentMobileFrames = windowEvents.filter(e => e.type === 'MOBILE_FRAME');
+    const latestMobileFrame = recentMobileFrames.length > 0 ? recentMobileFrames[recentMobileFrames.length - 1] : null;
+    if (latestMobileFrame && (latestMobileFrame.data.personCount || 0) > 1) {
+      this.triggerCriticalViolation('MULTIPLE_PERSONS_DETECTED');
+    }
   }
 
   private async triggerCriticalViolation(violationType: string) {

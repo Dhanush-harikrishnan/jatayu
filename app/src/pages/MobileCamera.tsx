@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Camera, RefreshCw, Wifi, Signal, Shield,
-  Move, AlertTriangle, Smartphone, CheckCircle,
-  ChevronUp, ChevronDown, ChevronLeft, ChevronRight
+  Move, AlertTriangle, Smartphone, CheckCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { io as socketIO, Socket } from 'socket.io-client';
@@ -16,7 +15,7 @@ interface MobileCameraProps {
   pairingToken?: string;
 }
 
-type ConnectionState = 'idle' | 'connecting' | 'connected' | 'error' | 'ended';
+type ConnectionState = 'idle' | 'connecting' | 'positioning' | 'waiting' | 'capturing' | 'error' | 'ended';
 
 export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -32,6 +31,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
   const snapshotIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const connectedAtRef = useRef<number>(0);
+  const examStartedByLaptopRef = useRef<boolean>(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -54,7 +54,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
 
   // Gyroscope (real device orientation)
   useEffect(() => {
-    if (connectionState !== 'connected') return;
+    if (!['positioning', 'waiting', 'capturing'].includes(connectionState)) return;
 
     const handleOrientation = (e: DeviceOrientationEvent) => {
       const x = e.beta ? e.beta / 180 : 0;
@@ -76,6 +76,15 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
 
     window.addEventListener('deviceorientation', handleOrientation);
     return () => window.removeEventListener('deviceorientation', handleOrientation);
+  }, [connectionState]);
+
+  // Bind the camera stream to the video element whenever it is safely mounted in the DOM
+  useEffect(() => {
+    if (['positioning', 'waiting', 'capturing'].includes(connectionState) && videoRef.current && streamRef.current) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+      }
+    }
   }, [connectionState]);
 
   const stopEverything = useCallback(() => {
@@ -154,6 +163,18 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
     }, SNAPSHOT_INTERVAL_MS);
   }, [captureFrame]);
 
+  // Handle the automatic snapshot loop only when natively in capturing mode
+  useEffect(() => {
+    if (connectionState === 'capturing') {
+      startSnapshotLoop();
+    } else {
+      if (snapshotIntervalRef.current) {
+        clearInterval(snapshotIntervalRef.current);
+        snapshotIntervalRef.current = null;
+      }
+    }
+  }, [connectionState, startSnapshotLoop]);
+
   const handleConnect = async () => {
     setConnectionState('connecting');
     setErrorMessage(null);
@@ -196,18 +217,22 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
 
       socket.on('connect', () => {
         console.log('Mobile socket connected:', socket.id);
-        setConnectionState('connected');
+        setConnectionState('positioning');
         connectedAtRef.current = Date.now();
         // Notify the desktop that mobile is paired
         socket.emit('mobile-paired', { timestamp: Date.now() });
-        // Start sending snapshots
-        startSnapshotLoop();
       });
 
       socket.on('connect_error', (err) => {
         console.error('Socket connection error:', err.message);
         setConnectionState('error');
         setErrorMessage(`Connection failed: ${err.message}`);
+      });
+
+      socket.on('exam-started', () => {
+        console.log('Laptop formally started exam!');
+        examStartedByLaptopRef.current = true;
+        setConnectionState(prev => prev === 'waiting' ? 'capturing' : prev);
       });
 
       socket.on('exam-ended', () => {
@@ -363,8 +388,101 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       </div>
     );
   }
+  // === POSITIONING: Show instructions to place phone ===
+  if (connectionState === 'positioning') {
+    return (
+      <div className="min-h-screen bg-black overflow-hidden flex flex-col relative">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 h-full w-full object-cover opacity-50"
+        />
+        <div className="absolute inset-0 bg-black/40" />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center p-6 min-h-screen pt-24 pb-20">
+          <div className="w-full max-w-sm rounded-3xl bg-navy-900/90 backdrop-blur-md border border-white/10 p-6 flex flex-col text-center shadow-2xl">
+            <Smartphone strokeWidth={1} className="h-12 w-12 text-cyan mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">Position Your Camera</h2>
+            <div className="text-left text-sm text-text-secondary space-y-3 mb-6 bg-white/5 p-4 rounded-xl border border-white/5">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-cyan shrink-0 mt-0.5" />
+                <span>Place your phone 3-4 feet to your side.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-cyan shrink-0 mt-0.5" />
+                <span>Ensure your <strong>laptop screen</strong> and <strong>hands</strong> are visible in the frame.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-4 w-4 text-cyan shrink-0 mt-0.5" />
+                <span>Keep the phone plugged into power.</span>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => {
+                if (examStartedByLaptopRef.current) {
+                  setConnectionState('capturing');
+                } else {
+                  setConnectionState('waiting');
+                }
+              }}
+              className="w-full py-4 rounded-xl bg-cyan text-navy-900 font-semibold text-lg hover:bg-cyan/90 transition-colors shadow-[0_0_20px_rgba(34,211,238,0.3)]"
+            >
+              Ready, camera is positioned
+            </button>
+          </div>
+        </div>
 
-  // === CONNECTED: Live Camera View ===
+        {/* Bottom Controls */}
+        <div className="absolute top-8 right-6 z-20">
+          <button
+            onClick={switchCamera}
+            className="h-12 w-12 rounded-full bg-black/60 border border-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+          >
+            <RefreshCw strokeWidth={1} className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // === WAITING: Waiting for laptop to start exam ===
+  if (connectionState === 'waiting') {
+    return (
+      <div className="min-h-screen bg-black overflow-hidden flex flex-col relative">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 h-full w-full object-cover opacity-20 blur-sm"
+        />
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="flex h-20 w-20 bg-cyan/10 border border-cyan/20 items-center justify-center rounded-2xl mb-8 shadow-[0_0_30px_rgba(34,211,238,0.2)]"
+          >
+             <CheckCircle strokeWidth={1} className="h-10 w-10 text-cyan" />
+          </motion.div>
+          
+          <h2 className="text-2xl font-bold text-white mb-3 text-center">Camera Ready!</h2>
+          <div className="max-w-xs text-center">
+            <p className="text-text-secondary text-sm mb-4 leading-relaxed">
+              Please continue setting up on your laptop.
+            </p>
+            <p className="text-white/40 text-xs">
+              This camera will automatically begin capturing when you click "Start Exam" on your laptop.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // === CAPTURING: Live Camera View ===
   return (
     <div className="min-h-screen bg-black overflow-hidden">
       {/* Status Bar */}
@@ -400,48 +518,26 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
           className="h-full w-full object-cover"
         />
 
-        {/* Corner Markers */}
-        <div className="absolute inset-4 pointer-events-none">
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan/60" />
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan/60" />
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyan/60" />
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyan/60" />
-        </div>
-
-        {/* Positioning Guide */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-3/4 h-1/2 border border-dashed border-white/20 rounded-lg">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-              <p className="text-xs text-white/40 uppercase tracking-wider">Position Desk Here</p>
-            </div>
-          </div>
-        </div>
-
         {/* Top Info Bar */}
-        <div className="absolute top-12 left-4 right-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm">
+        <div className="absolute top-12 left-4 right-4 flex items-center justify-between pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
             <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            <span className="text-xs text-white">Connected</span>
-          </div>
-          
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm">
-            <Camera strokeWidth={1} className="h-3 w-3 text-cyan" />
-            <span className="text-xs text-white">{facingMode === 'environment' ? 'Rear' : 'Front'} Camera</span>
+            <span className="text-xs text-white font-medium">Monitoring Active</span>
           </div>
         </div>
 
         {/* Snapshot Counter */}
-        <div className="absolute top-12 left-1/2 -translate-x-1/2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm">
-            <span className="text-xs text-white/60">Frames: {snapshotCount}</span>
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
+            <span className="text-xs text-white/80">Frames: <span className="text-white font-mono">{snapshotCount}</span></span>
           </div>
         </div>
 
         {/* Gyroscope Indicator */}
-        <div className="absolute top-24 right-4">
+        <div className="absolute top-24 right-4 pointer-events-none">
           <div className={cn(
-            'p-3 rounded-xl backdrop-blur-sm transition-colors',
-            movementAlert ? 'bg-violation/80' : 'bg-black/60'
+            'p-3 rounded-2xl backdrop-blur-sm transition-colors border',
+            movementAlert ? 'bg-violation/80 border-violation/50' : 'bg-black/60 border-white/10'
           )}>
             <div className="flex items-center gap-2 mb-2">
               <Move strokeWidth={1} className={cn(
@@ -449,55 +545,47 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
                 movementAlert ? 'text-white' : 'text-cyan'
               )} />
               <span className={cn(
-                'text-xs font-medium',
+                'text-xs font-medium uppercase tracking-wider',
                 movementAlert ? 'text-white' : 'text-cyan'
-              )}>Gyroscope</span>
+              )}>Gyro</span>
             </div>
             
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 border border-white/20 rounded-full" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-white rounded-full" />
+            <div className="relative w-12 h-12 mx-auto">
+              <div className="absolute inset-0 border border-white/20 rounded-full bg-black/20" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-white/50 rounded-full" />
               <motion.div 
-                className="absolute w-2 h-2 bg-cyan rounded-full"
+                className={cn(
+                  "absolute w-2 h-2 rounded-full",
+                  movementAlert ? "bg-white" : "bg-cyan"
+                )}
                 style={{
-                  left: `calc(50% + ${gyroData.x * 20}px)`,
-                  top: `calc(50% + ${gyroData.y * 20}px)`,
+                  left: `calc(50% + ${Math.min(gyroData.x * 12, 20)}px)`,
+                  top: `calc(50% + ${Math.min(gyroData.y * 12, 20)}px)`,
                 }}
                 animate={{
-                  left: `calc(50% + ${gyroData.x * 20}px)`,
-                  top: `calc(50% + ${gyroData.y * 20}px)`,
+                  left: `calc(50% + ${Math.min(gyroData.x * 12, 20)}px)`,
+                  top: `calc(50% + ${Math.min(gyroData.y * 12, 20)}px)`,
                 }}
-                transition={{ type: 'spring', stiffness: 300 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               />
-            </div>
-            
-            <div className="mt-2 space-y-0.5 text-[10px] font-mono text-white/60">
-              <div className="flex justify-between">
-                <span>X:</span>
-                <span>{gyroData.x.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Y:</span>
-                <span>{gyroData.y.toFixed(2)}</span>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Movement Alert */}
+        {/* Movement Alert overlay */}
         <AnimatePresence>
           {movementAlert && (
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="absolute top-1/3 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl bg-violation/90 backdrop-blur-sm"
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="absolute top-1/3 left-1/2 -translate-x-1/2 px-5 py-4 rounded-2xl bg-violation/90 backdrop-blur-md shadow-2xl border border-white/20 flex flex-col items-center pointer-events-none"
             >
-              <div className="flex items-center gap-2">
-                <AlertTriangle strokeWidth={1} className="h-5 w-5 text-white" />
-                <span className="text-sm font-medium text-white">Device Movement Detected</span>
+              <div className="flex items-center gap-3 mb-1">
+                <AlertTriangle className="h-6 w-6 text-white" />
+                <span className="text-base font-bold text-white uppercase tracking-wider">Movement Detected</span>
               </div>
-              <p className="text-xs text-white/80 mt-1">Please keep the device stationary</p>
+              <p className="text-sm text-white/90">Please keep the device stationary</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -508,31 +596,21 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
             {/* Camera Switch */}
             <button
               onClick={switchCamera}
-              className="h-12 w-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+              className="h-14 w-14 rounded-full bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/10 transition-colors shadow-lg"
             >
-              <RefreshCw strokeWidth={1} className="h-5 w-5" />
+              <RefreshCw strokeWidth={1.5} className="h-6 w-6" />
             </button>
 
             {/* Recording Indicator */}
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-sm">
-              <span className="h-2.5 w-2.5 rounded-full bg-violation animate-pulse" />
-              <span className="text-xs text-white font-medium">LIVE</span>
+            <div className="flex items-center justify-center p-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/5">
+               <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-red-500/10 border border-red-500/20">
+                 <span className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
+                 <span className="text-sm tracking-widest text-red-100 font-bold uppercase">Recording</span>
+               </div>
             </div>
 
-            {/* Info Button */}
-            <button className="h-12 w-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors">
-              <Smartphone strokeWidth={1} className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Positioning Arrows */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-          <div className="relative w-48 h-48">
-            <ChevronUp strokeWidth={1} className="absolute top-0 left-1/2 -translate-x-1/2 h-6 w-6 text-white/30" />
-            <ChevronDown strokeWidth={1} className="absolute bottom-0 left-1/2 -translate-x-1/2 h-6 w-6 text-white/30" />
-            <ChevronLeft strokeWidth={1} className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-6 text-white/30" />
-            <ChevronRight strokeWidth={1} className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6 text-white/30" />
+            {/* Empty space for flex spacing */}
+            <div className="w-14 h-14" />
           </div>
         </div>
       </div>
