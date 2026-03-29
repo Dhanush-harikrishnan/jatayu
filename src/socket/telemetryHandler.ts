@@ -84,14 +84,19 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         const laptopLabels = filteredLabels.filter(l =>
           l.Name === 'Laptop' || l.Name === 'Computer' || l.Name === 'Monitor'
         );
-        // Use instances count if available. Take the maximum across synonyms, 
+        // Use instances count if available. Take the maximum across synonyms,
         // since Rekognition will return "Laptop", "Computer", and "Monitor" for the exact same object.
         const laptopCount = laptopLabels.reduce((maxCount, l) => {
           return Math.max(maxCount, l.Instances?.length || 1);
         }, 0);
         const hasLaptopScreen = laptopLabels.length > 0;
 
-        const hasViolation = !!phoneLabel || laptopCount > 1 || multiplePersonsDetected;
+        // Book/Document detection
+        const bookLabel = filteredLabels.find(l =>
+          (l.Name === 'Book' || l.Name === 'Document' || l.Name === 'Paper' || l.Name === 'Textbook') && (l.Confidence ?? 0) > 75
+        );
+
+        const hasViolation = !!phoneLabel || !!bookLabel || laptopCount > 1 || multiplePersonsDetected;
 
         // Upload evidence: ALWAYS upload when a violation is detected, 
         // otherwise respect the periodic interval
@@ -118,6 +123,15 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
             timestamp: data.timestamp,
             data: { label: phoneLabel.Name, confidence: phoneLabel.Confidence },
             evidenceKey, // Always linked since we force-uploaded above
+          });
+        }
+
+        if (bookLabel) {
+          engine.addEvent({
+            type: 'BOOK_DETECTED' as any,
+            timestamp: data.timestamp,
+            data: { label: bookLabel.Name, confidence: bookLabel.Confidence },
+            evidenceKey,
           });
         }
 

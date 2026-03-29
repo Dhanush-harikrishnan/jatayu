@@ -9,20 +9,20 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-navy-900">
+    <div className="relative min-h-screen w-full overflow-hidden bg-slate-50">
       {/* Background Effects */}
       <div className="absolute inset-0">
         {/* Gradient orbs */}
-        <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-cyan/10 blur-[120px]" />
-        <div className="absolute -right-1/4 bottom-0 h-[500px] w-[500px] rounded-full bg-cyan/5 blur-[100px]" />
+        <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-blue-100/50 blur-[120px]" />
+        <div className="absolute -right-1/4 bottom-0 h-[500px] w-[500px] rounded-full bg-blue-50/50 blur-[100px]" />
         
         {/* Grid pattern */}
         <div 
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(0, 240, 255, 0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(0, 240, 255, 0.5) 1px, transparent 1px)
+              linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
             `,
             backgroundSize: '50px 50px',
           }}
@@ -36,15 +36,15 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         className="relative z-10 flex items-center justify-between px-6 py-4 lg:px-12"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-            <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100/50">
+            <Shield strokeWidth={1} className="h-6 w-6 text-blue-600" />
           </div>
-          <span className="font-sora text-xl font-bold text-white">
+          <span className="font-sora text-xl font-bold text-slate-900">
             SecureGuard
           </span>
         </div>
         
-        <div className="flex items-center gap-6 text-sm text-text-secondary">
+        <div className="flex items-center gap-6 text-sm text-slate-500">
           <div className="hidden items-center gap-2 md:flex">
             <Lock strokeWidth={1} className="h-4 w-4" />
             <span>256-bit Encryption</span>
@@ -65,22 +65,22 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           className="w-full max-w-md"
         >
           {/* Glass Card */}
-          <div className="glass-card p-8">
+          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-8">
             {/* Header */}
             <div className="mb-8 text-center">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan/10"
+                className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100/50"
               >
-                <Shield strokeWidth={1} className="h-8 w-8 text-cyan" />
+                <Shield strokeWidth={1} className="h-8 w-8 text-blue-600" />
               </motion.div>
-              <h1 className="font-sora text-2xl font-bold text-white">
+              <h1 className="font-sora text-2xl font-bold text-slate-900">
                 {title}
               </h1>
               {subtitle && (
-                <p className="mt-2 text-sm text-text-secondary">
+                <p className="mt-2 text-sm text-slate-500">
                   {subtitle}
                 </p>
               )}
@@ -97,7 +97,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             transition={{ delay: 0.4 }}
             className="mt-8 text-center"
           >
-            <div className="flex items-center justify-center gap-4 text-xs text-text-secondary">
+            <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
               <span className="flex items-center gap-1">
                 <Globe strokeWidth={1} className="h-3 w-3" />
                 GDPR Ready
@@ -107,7 +107,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
                 TLS 1.3
               </span>
             </div>
-            <p className="mt-4 text-xs text-text-secondary/60">
+            <p className="mt-4 text-xs text-slate-500/60">
               © 2024 SecureGuard Pro. All rights reserved.
             </p>
           </motion.div>
@@ -117,9 +117,9 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       {/* Decorative Elements */}
       <div className="pointer-events-none absolute bottom-8 left-8 hidden lg:block">
         <div className="flex flex-col gap-2">
-          <div className="h-1 w-12 rounded-full bg-cyan/30" />
-          <div className="h-1 w-8 rounded-full bg-cyan/20" />
-          <div className="h-1 w-16 rounded-full bg-cyan/10" />
+          <div className="h-1 w-12 rounded-full bg-blue-600/30" />
+          <div className="h-1 w-8 rounded-full bg-blue-600/20" />
+          <div className="h-1 w-16 rounded-full bg-blue-100/50" />
         </div>
       </div>
     </div>

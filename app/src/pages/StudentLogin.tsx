@@ -49,11 +49,11 @@ export function StudentLogin() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Email Field */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-white/80">
+          <label className="text-sm font-medium text-slate-700">
             Email Address
           </label>
           <div className="relative">
-            <Mail strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+            <Mail strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type="email"
               value={email}
@@ -68,11 +68,11 @@ export function StudentLogin() {
 
         {/* Password Field */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-white/80">
+          <label className="text-sm font-medium text-slate-700">
             Password
           </label>
           <div className="relative">
-            <Lock strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+            <Lock strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
@@ -86,7 +86,7 @@ export function StudentLogin() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-500 transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff strokeWidth={1} className="h-5 w-5" /> : <Eye strokeWidth={1} className="h-5 w-5" />}
@@ -99,13 +99,13 @@ export function StudentLogin() {
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-white/20 bg-white/5 text-cyan focus:ring-cyan/30"
+              className="h-4 w-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-cyan/30"
             />
-            <span className="text-white/60">Remember me</span>
+            <span className="text-slate-500">Remember me</span>
           </label>
           <a
             href="#"
-            className="text-cyan hover:text-cyan-light transition-colors"
+            className="text-blue-600 hover:text-blue-600-light transition-colors"
           >
             Forgot password?
           </a>
@@ -167,10 +167,10 @@ export function StudentLogin() {
         {/* Divider */}
         <div className="relative py-2">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/10" />
+            <div className="w-full border-t border-slate-200" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-[#131b2e] px-4 text-xs text-white/40">
+            <span className="bg-white px-4 text-xs text-slate-400">
               Or continue with
             </span>
           </div>
@@ -179,7 +179,7 @@ export function StudentLogin() {
         {/* SSO Button */}
         <button
           type="button"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white/80 transition-all hover:bg-white/10 hover:border-white/20 flex items-center justify-center gap-2"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-all hover:bg-slate-100 hover:border-slate-300 flex items-center justify-center gap-2"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -204,16 +204,16 @@ export function StudentLogin() {
       </form>
 
       {/* Help Link & Admin */}
-      <div className="mt-6 flex flex-col items-center gap-2 text-sm text-white/60">
+      <div className="mt-6 flex flex-col items-center gap-2 text-sm text-slate-500">
         <p>
           Need help?{' '}
-          <a href="#" className="text-cyan hover:text-cyan-light transition-colors">
+          <a href="#" className="text-blue-600 hover:text-blue-600-light transition-colors">
             Contact Support
           </a>
         </p>
         <p>
           Are you an administrator?{' '}
-          <button onClick={() => window.location.href = '/admin/login'} className="text-cyan hover:text-cyan-light transition-colors">
+          <button onClick={() => window.location.href = '/admin/login'} className="text-blue-600 hover:text-blue-600-light transition-colors">
             Admin Login
           </button>
         </p>

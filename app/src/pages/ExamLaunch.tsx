@@ -396,25 +396,25 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     : `${window.location.origin}/mobile-pair?code=${pairingCode}&exam=${examId}`;
 
   return (
-    <div className="min-h-screen bg-navy-900">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-navy-900/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-100 bg-slate-50/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 py-4 lg:px-8">
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={() => navigateSafely('/dashboard')}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-900 transition-colors"
             >
               <ChevronLeft strokeWidth={1} className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-                <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100/50">
+                <Shield strokeWidth={1} className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="font-sora text-lg font-bold text-white">SecureGuard</h1>
-                <p className="text-xs text-text-secondary">Exam Setup</p>
+                <h1 className="font-sora text-lg font-bold text-slate-900">SecureGuard</h1>
+                <p className="text-xs text-slate-500">Exam Setup</p>
               </div>
             </div>
           </div>
@@ -430,9 +430,9 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 <div key={step.id} className="flex items-center">
                   <div className={cn(
                     'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
-                    isActive && 'bg-cyan/10 text-cyan',
+                    isActive && 'bg-blue-100/50 text-blue-600',
                     isCompleted && 'text-success',
-                    !isActive && !isCompleted && 'text-white/40'
+                    !isActive && !isCompleted && 'text-slate-400'
                   )}>
                     <Icon className="h-4 w-4" />
                     <span className="text-sm font-medium hidden lg:inline">{step.label}</span>
@@ -440,7 +440,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                   {idx < STEPS.length - 1 && (
                     <div className={cn(
                       'w-8 h-px mx-2',
-                      isCompleted ? 'bg-success' : 'bg-white/10'
+                      isCompleted ? 'bg-success' : 'bg-slate-100'
                     )} />
                   )}
                 </div>
@@ -464,18 +464,18 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 className="space-y-6"
               >
                 <div className="text-center">
-                  <h2 className="font-sora text-2xl font-bold text-white">Before You Begin</h2>
-                  <p className="mt-2 text-text-secondary">Make sure you meet all requirements for a secure exam session</p>
+                  <h2 className="font-sora text-2xl font-bold text-slate-900">Before You Begin</h2>
+                  <p className="mt-2 text-slate-500">Make sure you meet all requirements for a secure exam session</p>
                 </div>
 
                 {!examEnabled && (
-                  <div className="glass-card border border-violation/30 bg-violation/10 p-6">
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-xl border border-violation/30 bg-violation/10 p-6">
                     <h4 className="font-semibold text-violation">This test is currently disabled by admin</h4>
-                    <p className="mt-2 text-sm text-white/70">Please contact your instructor and return to dashboard.</p>
+                    <p className="mt-2 text-sm text-slate-900/70">Please contact your instructor and return to dashboard.</p>
                     <button
                       type="button"
                       onClick={() => navigateSafely('/dashboard')}
-                      className="mt-4 rounded-lg bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/20"
+                      className="mt-4 rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-900 hover:bg-slate-200"
                     >
                       Back to Dashboard
                     </button>
@@ -509,12 +509,12 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                   />
                 </div>
 
-                <div className="glass-card p-6">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
                   <div className="flex items-start gap-3">
-                    <AlertCircle strokeWidth={1} className="h-5 w-5 text-cyan flex-shrink-0 mt-0.5" />
+                    <AlertCircle strokeWidth={1} className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-medium text-white">Important Rules</h4>
-                      <ul className="mt-2 space-y-2 text-sm text-text-secondary">
+                      <h4 className="font-medium text-slate-900">Important Rules</h4>
+                      <ul className="mt-2 space-y-2 text-sm text-slate-500">
                         <li>• You must remain in front of your camera at all times</li>
                         <li>• No external materials, books, or notes allowed</li>
                         <li>• No talking or communication with others</li>
@@ -526,12 +526,12 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer hover:text-white transition-colors">
+                  <label className="flex items-center gap-2 text-sm text-slate-500 cursor-pointer hover:text-slate-900 transition-colors">
                     <input 
                       type="checkbox" 
                       checked={rulesAccepted} 
                       onChange={e => setRulesAccepted(e.target.checked)} 
-                      className="rounded border-cyan/30 text-cyan focus:ring-cyan bg-navy-800"
+                      className="rounded border-blue-600/30 text-blue-600 focus:ring-cyan bg-white"
                     />
                     I understand and agree to the proctoring rules
                   </label>
@@ -563,14 +563,14 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 className="space-y-6"
               >
                 <div className="text-center">
-                  <h2 className="font-sora text-2xl font-bold text-white">Pair Your Mobile Device</h2>
-                  <p className="mt-2 text-text-secondary">Use your phone as a secondary camera for room monitoring</p>
+                  <h2 className="font-sora text-2xl font-bold text-slate-900">Pair Your Mobile Device</h2>
+                  <p className="mt-2 text-slate-500">Use your phone as a secondary camera for room monitoring</p>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
                   {/* QR Code */}
-                  <div className="glass-card p-6 flex flex-col items-center">
-                    <h3 className="font-medium text-white mb-4">Scan QR Code</h3>
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 flex flex-col items-center">
+                    <h3 className="font-medium text-slate-900 mb-4">Scan QR Code</h3>
                     <div className="relative p-4 bg-white rounded-xl">
                       <QRCodeSVG 
                         value={pairingQrValue}
@@ -587,14 +587,14 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                         </motion.div>
                       )}
                     </div>
-                    <p className="mt-4 text-sm text-text-secondary text-center">
+                    <p className="mt-4 text-sm text-slate-500 text-center">
                       Open mobile app and scan to pair automatically
                     </p>
                     
                     {!isPaired && (
                       <button 
                         onClick={() => setIsPaired(true)}
-                        className="mt-6 px-4 py-2 bg-cyan/10 text-cyan border border-cyan/20 rounded-lg hover:bg-cyan/20 transition-colors w-full text-sm font-medium"
+                        className="mt-6 px-4 py-2 bg-blue-100/50 text-blue-600 border border-blue-600/20 rounded-lg hover:bg-blue-600/20 transition-colors w-full text-sm font-medium"
                       >
                         [Dev] Simulate Mobile App Scan
                       </button>
@@ -603,8 +603,8 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
 
                   {/* Pairing Code */}
                   <div className="space-y-4">
-                    <div className="glass-card p-6">
-                      <h3 className="font-medium text-white mb-4">Or Enter Pairing Code</h3>
+                    <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
+                      <h3 className="font-medium text-slate-900 mb-4">Or Enter Pairing Code</h3>
                       <div className="flex items-center gap-3">
                         <div className="flex-1 relative">
                           <input
@@ -616,42 +616,42 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                         </div>
                         <button
                           onClick={copyPairingCode}
-                          className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                          className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                         >
                           <Copy strokeWidth={1} className="h-5 w-5" />
                         </button>
                         <button
                           onClick={refreshPairingCode}
-                          className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                          className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                         >
                           <RefreshCw strokeWidth={1} className="h-5 w-5" />
                         </button>
                       </div>
-                      <p className="mt-4 text-sm text-text-secondary">
+                      <p className="mt-4 text-sm text-slate-500">
                         Enter this code in the SecureGuard mobile app
                       </p>
                     </div>
 
                     {/* Pairing Status */}
                     <div className={cn(
-                      'glass-card p-4 transition-all',
-                      isPaired ? 'border-success/30 bg-success/5' : 'border-white/10'
+                      'bg-white border border-slate-200 shadow-sm rounded-xl p-4 transition-all',
+                      isPaired ? 'border-success/30 bg-success/5' : 'border-slate-200'
                     )}>
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           'h-10 w-10 rounded-full flex items-center justify-center',
-                          isPaired ? 'bg-success/20' : 'bg-white/10'
+                          isPaired ? 'bg-success/20' : 'bg-slate-100'
                         )}>
                           <Smartphone strokeWidth={1} className={cn(
                             'h-5 w-5',
-                            isPaired ? 'text-success' : 'text-white/40'
+                            isPaired ? 'text-success' : 'text-slate-400'
                           )} />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-white">
+                          <p className="font-medium text-slate-900">
                             {isPaired ? 'Device Paired Successfully' : 'Waiting for device...'}
                           </p>
-                          <p className="text-sm text-text-secondary">
+                          <p className="text-sm text-slate-500">
                             {isPaired 
                               ? 'Mobile Device - Connected' 
                               : 'Keep this page open while pairing'}
@@ -662,9 +662,9 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     </div>
 
                     {/* Instructions */}
-                    <div className="rounded-xl bg-cyan/5 p-4 border border-cyan/10">
-                      <h4 className="text-sm font-medium text-cyan mb-2">Positioning Guide</h4>
-                      <ul className="space-y-1 text-sm text-text-secondary">
+                    <div className="rounded-xl bg-blue-50/50 p-4 border border-blue-600/10">
+                      <h4 className="text-sm font-medium text-blue-600 mb-2">Positioning Guide</h4>
+                      <ul className="space-y-1 text-sm text-slate-500">
                         <li>• Place phone 3-4 feet to your side</li>
                         <li>• Angle to capture your desk and hands</li>
                         <li>• Ensure good lighting</li>
@@ -703,15 +703,15 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 className="space-y-6"
               >
                 <div className="text-center">
-                  <h2 className="font-sora text-2xl font-bold text-white">System Verification</h2>
-                  <p className="mt-2 text-text-secondary">Confirming all monitoring systems are active</p>
+                  <h2 className="font-sora text-2xl font-bold text-slate-900">System Verification</h2>
+                  <p className="mt-2 text-slate-500">Confirming all monitoring systems are active</p>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
                   {/* Camera Preview */}
-                  <div className="glass-card p-6">
-                    <h3 className="font-medium text-white mb-4">Camera Preview</h3>
-                    <div className="relative aspect-video rounded-xl bg-navy-800 overflow-hidden">
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
+                    <h3 className="font-medium text-slate-900 mb-4">Camera Preview</h3>
+                    <div className="relative aspect-video rounded-xl bg-white overflow-hidden">
                       {cameraPermission === true ? (
                         <video
                           ref={videoRef}
@@ -723,35 +723,35 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                       ) : cameraPermission === false ? (
                         <div className="flex flex-col items-center justify-center h-full">
                           <AlertCircle strokeWidth={1} className="h-12 w-12 text-violation mb-2" />
-                          <p className="text-sm text-text-secondary">Camera access denied</p>
+                          <p className="text-sm text-slate-500">Camera access denied</p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full">
-                          <div className="h-12 w-12 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
-                          <p className="mt-2 text-sm text-text-secondary">Requesting access...</p>
+                          <div className="h-12 w-12 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                          <p className="mt-2 text-sm text-slate-500">Requesting access...</p>
                         </div>
                       )}
                       
                       {/* Face Detection Overlay */}
                       {cameraPermission === true && (
                         <div className="absolute inset-0 pointer-events-none">
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-40 border-2 border-cyan/50 rounded-lg">
-                            <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-cyan" />
-                            <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-cyan" />
-                            <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-cyan" />
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-cyan" />
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-40 border-2 border-blue-600/50 rounded-lg">
+                            <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-blue-600" />
+                            <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-blue-600" />
+                            <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-blue-600" />
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-blue-600" />
                           </div>
-                          <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-navy-900/80 px-3 py-1 rounded-full">
+                          <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-slate-50/80 px-3 py-1 rounded-full">
                             <span
                               className={[
                                 'h-2 w-2 rounded-full',
-                                setupFaceCheck === 'checking' && 'bg-cyan animate-pulse',
+                                setupFaceCheck === 'checking' && 'bg-blue-600 animate-pulse',
                                 setupFaceCheck === 'detected' && 'bg-success animate-pulse',
                                 setupFaceCheck === 'not_detected' && 'bg-violation',
                                 setupFaceCheck === 'unavailable' && 'bg-warning'
                               ].filter(Boolean).join(' ')}
                             />
-                            <span className="text-xs text-white">
+                            <span className="text-xs text-slate-900">
                               {setupFaceCheck === 'checking' && 'Checking face...'}
                               {setupFaceCheck === 'detected' && 'Face detected'}
                               {setupFaceCheck === 'not_detected' && 'No face detected'}
@@ -829,11 +829,11 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 className="space-y-6"
               >
                 <div className="text-center">
-                  <h2 className="font-sora text-2xl font-bold text-white">Face Liveness Check</h2>
-                  <p className="mt-2 text-text-secondary">Please position your face in the oval to prove you're a real person.</p>
+                  <h2 className="font-sora text-2xl font-bold text-slate-900">Face Liveness Check</h2>
+                  <p className="mt-2 text-slate-500">Please position your face in the oval to prove you're a real person.</p>
                 </div>
 
-                <div className="glass-card p-6 flex justify-center items-center bg-white min-h-[300px]">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 flex justify-center items-center bg-white min-h-[300px]">
                   {!import.meta.env.VITE_AWS_COGNITO_IDENTITY_POOL_ID ? (
                     <div className="flex flex-col items-center justify-center p-8 bg-violation/5 border border-violation/20 rounded-xl max-w-lg w-full">
                       <AlertCircle className="h-10 w-10 text-violation mb-3" />
@@ -844,7 +844,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                       {(import.meta.env.DEV || import.meta.env.VITE_ALLOW_LIVENESS_BYPASS === 'true' || !import.meta.env.VITE_AWS_COGNITO_IDENTITY_POOL_ID) && (
                         <button
                           onClick={() => setLivenessPassed(true)}
-                          className="mt-6 px-4 py-2 bg-navy-900 text-white rounded-lg hover:bg-navy-800 transition-colors"
+                          className="mt-6 px-4 py-2 bg-slate-50 text-slate-900 rounded-lg hover:bg-white transition-colors"
                         >
                           Dev Bypass Liveness Check
                         </button>
@@ -872,7 +872,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                      </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center p-8">
-                      <div className="h-12 w-12 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+                      <div className="h-12 w-12 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                       <p className="mt-4 text-navy-900">Loading liveness session...</p>
                     </div>
                   )}
@@ -888,7 +888,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                           // The useEffect watching livenessSessionId === null
                           // on step 3 will auto-create a new session.
                         }}
-                        className="mt-2 px-3 py-1.5 rounded bg-cyan text-navy-900 text-sm font-semibold"
+                        className="mt-2 px-3 py-1.5 rounded bg-blue-600 text-navy-900 text-sm font-semibold"
                       >
                         Retry Liveness Check
                       </button>
@@ -931,7 +931,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-8"
               >
-                <div className="glass-card p-8 max-w-md mx-auto">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-8 max-w-md mx-auto">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -941,25 +941,25 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     <CheckCircle strokeWidth={1} className="h-10 w-10 text-success" />
                   </motion.div>
                   
-                  <h2 className="font-sora text-2xl font-bold text-white">All Systems Ready!</h2>
-                  <p className="mt-2 text-text-secondary">
+                  <h2 className="font-sora text-2xl font-bold text-slate-900">All Systems Ready!</h2>
+                  <p className="mt-2 text-slate-500">
                     Your exam environment is fully secured and monitored
                   </p>
 
                   <div className="mt-8">
-                    <p className="text-sm text-text-secondary mb-2">Exam starts in</p>
-                    <div className="font-sora text-6xl font-bold text-cyan">
+                    <p className="text-sm text-slate-500 mb-2">Exam starts in</p>
+                    <div className="font-sora text-6xl font-bold text-blue-600">
                       {countdown}
                     </div>
                   </div>
 
-                  <div className="mt-8 space-y-2 text-sm text-text-secondary">
+                  <div className="mt-8 space-y-2 text-sm text-slate-500">
                     <p>Machine Learning Basics</p>
                     <p>60 minutes • 30 questions</p>
                   </div>
                 </div>
 
-                <p className="text-sm text-text-secondary">
+                <p className="text-sm text-slate-500">
                   Do not close this window or refresh the page
                 </p>
               </motion.div>
@@ -980,29 +980,29 @@ interface RequirementCardProps {
 
 function RequirementCard({ icon: Icon, title, description, status }: RequirementCardProps) {
   return (
-    <div className="glass-card p-4 flex items-start gap-4">
+    <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 flex items-start gap-4">
       <div className={cn(
         'h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0',
         status === 'passed' ? 'bg-success/10' : 
         status === 'failed' ? 'bg-violation/10' : 
-        status === 'checking' ? 'bg-cyan/10' : 'bg-white/5'
+        status === 'checking' ? 'bg-blue-100/50' : 'bg-white'
       )}>
         <Icon className={cn(
           'h-5 w-5',
           status === 'passed' ? 'text-success' : 
           status === 'failed' ? 'text-violation' : 
-          status === 'checking' ? 'text-cyan' : 'text-white/40'
+          status === 'checking' ? 'text-blue-600' : 'text-slate-400'
         )} />
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <h4 className="font-medium text-white">{title}</h4>
+          <h4 className="font-medium text-slate-900">{title}</h4>
           {status === 'checking' && (
-            <div className="h-4 w-4 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+            <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           )}
           {status === 'passed' && <CheckCircle strokeWidth={1} className="h-4 w-4 text-success" />}
         </div>
-        <p className="text-sm text-text-secondary mt-1">{description}</p>
+        <p className="text-sm text-slate-500 mt-1">{description}</p>
       </div>
     </div>
   );
@@ -1019,7 +1019,7 @@ interface StatusCheckItemProps {
 
 function StatusCheckItem({ label, status, successText, errorText, actionText, onCheck }: StatusCheckItemProps) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+    <div className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-200">
       <div className="flex items-center gap-3">
         {status === true ? (
           <CheckCircle strokeWidth={1} className="h-5 w-5 text-success" />
@@ -1028,23 +1028,23 @@ function StatusCheckItem({ label, status, successText, errorText, actionText, on
         ) : actionText ? (
           <Laptop strokeWidth={1} className="h-5 w-5 text-warning" />
         ) : (
-          <div className="h-5 w-5 border-2 border-cyan border-t-transparent rounded-full animate-spin" />
+          <div className="h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
         )}
-        <span className="text-white">{label}</span>
+        <span className="text-slate-900">{label}</span>
       </div>
       <div className="flex items-center gap-3">
         <span className={cn(
           'text-sm',
           status === true ? 'text-success' : 
           status === false ? 'text-violation' : 
-          'text-text-secondary'
+          'text-slate-500'
         )}>
           {status === true ? successText : status === false ? errorText : (actionText ? 'Permission Required' : 'Checking...')}
         </span>
         {status === false && onCheck && (
           <button 
             onClick={onCheck}
-            className="text-xs text-cyan hover:text-cyan-light"
+            className="text-xs text-blue-600 hover:text-blue-600-light"
           >
             Retry
           </button>
@@ -1052,7 +1052,7 @@ function StatusCheckItem({ label, status, successText, errorText, actionText, on
         {status === null && actionText && onCheck && (
           <button 
             onClick={onCheck}
-            className="text-xs px-2 py-1 rounded bg-cyan/20 text-cyan hover:bg-cyan/30"
+            className="text-xs px-2 py-1 rounded bg-blue-600/20 text-blue-600 hover:bg-blue-600/30"
           >
             {actionText}
           </button>

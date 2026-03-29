@@ -86,11 +86,11 @@ export function AdminLogin() {
           >
             {/* Email Field */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-sm font-medium text-slate-700">
                 Admin Email
               </label>
               <div className="relative">
-                <Mail strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+                <Mail strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type="email"
                   value={email}
@@ -105,11 +105,11 @@ export function AdminLogin() {
 
             {/* Password Field */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-sm font-medium text-slate-700">
                 Password
               </label>
               <div className="relative">
-                <Lock strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+                <Lock strokeWidth={1} className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -123,7 +123,7 @@ export function AdminLogin() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-500 transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff strokeWidth={1} className="h-5 w-5" /> : <Eye strokeWidth={1} className="h-5 w-5" />}
@@ -170,11 +170,11 @@ export function AdminLogin() {
             </button>
 
             {/* Security Notice */}
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-cyan/5 border border-cyan/10">
-              <Shield strokeWidth={1} className="h-5 w-5 text-cyan flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50/50 border border-blue-600/10">
+              <Shield strokeWidth={1} className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-white/80">Enhanced Security Required</p>
-                <p className="text-xs text-text-secondary mt-1">
+                <p className="text-sm text-slate-700">Enhanced Security Required</p>
+                <p className="text-xs text-slate-500 mt-1">
                   All admin access requires two-factor authentication and is logged for compliance.
                 </p>
               </div>
@@ -193,24 +193,24 @@ export function AdminLogin() {
             <button
               type="button"
               onClick={() => setRequires2FA(false)}
-              className="text-sm text-cyan hover:text-cyan-light transition-colors"
+              className="text-sm text-blue-600 hover:text-blue-600-light transition-colors"
             >
               ← Back to login
             </button>
 
             <div className="text-center">
-              <div className="mx-auto h-16 w-16 rounded-full bg-cyan/10 flex items-center justify-center mb-4">
-                <Mail strokeWidth={1} className="h-8 w-8 text-cyan" />
+              <div className="mx-auto h-16 w-16 rounded-full bg-blue-100/50 flex items-center justify-center mb-4">
+                <Mail strokeWidth={1} className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="font-sora text-lg font-semibold text-white">Email Authentication</h3>
-              <p className="text-sm text-text-secondary mt-1">
+              <h3 className="font-sora text-lg font-semibold text-slate-900">Email Authentication</h3>
+              <p className="text-sm text-slate-500 mt-1">
                 Enter the 6-digit code sent to your admin email
               </p>
             </div>
 
             {/* OTP Input */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">
+              <label className="text-sm font-medium text-slate-700">
                 Verification Code
               </label>
               <input
@@ -278,9 +278,9 @@ export function AdminLogin() {
               )}
             </button>
 
-            <p className="text-center text-sm text-text-secondary">
+            <p className="text-center text-sm text-slate-500">
               Didn't receive a code?{' '}
-              <button type="button" className="text-cyan hover:text-cyan-light transition-colors">
+              <button type="button" className="text-blue-600 hover:text-blue-600-light transition-colors">
                 Resend
               </button>
             </p>
@@ -289,9 +289,9 @@ export function AdminLogin() {
       </AnimatePresence>
 
       {/* Help Link */}
-      <p className="mt-6 text-center text-sm text-white/60">
+      <p className="mt-6 text-center text-sm text-slate-500">
         Need admin access?{' '}
-        <a href="#" className="text-cyan hover:text-cyan-light transition-colors">
+        <a href="#" className="text-blue-600 hover:text-blue-600-light transition-colors">
           Contact IT Support
         </a>
       </p>

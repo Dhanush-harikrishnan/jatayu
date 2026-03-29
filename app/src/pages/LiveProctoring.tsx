@@ -436,28 +436,28 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
   const currentQ = QUESTIONS[currentQuestionIdx];
 
   return (
-    <div className="min-h-screen bg-navy-900 overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-slate-50 overflow-hidden flex flex-col">
       {/* Top Bar */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-navy-900/90 backdrop-blur-xl border-b border-white/5">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-slate-50/90 backdrop-blur-xl border-b border-slate-100">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan/10">
-              <Shield strokeWidth={1} className="h-5 w-5 text-cyan" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100/50">
+              <Shield strokeWidth={1} className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <h1 className="font-sora text-sm font-semibold text-white">Introduction to Computer Science</h1>
-              <p className="text-xs text-text-secondary">Exam ID: {examId}</p>
+              <h1 className="font-sora text-sm font-semibold text-slate-900">Introduction to Computer Science</h1>
+              <p className="text-xs text-slate-500">Exam ID: {examId}</p>
             </div>
           </div>
 
           {/* Center Timer */}
           <div className="flex items-center gap-4">
-            <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border", sessionTime <= 300 ? "bg-violation/10 border-violation/30" : "bg-white/5 border-white/10")}>
-              <Clock strokeWidth={1} className={cn("h-4 w-4", sessionTime <= 300 ? "text-violation animate-pulse" : "text-cyan")} />
-              <span className={cn("font-mono text-lg font-semibold", sessionTime <= 300 ? "text-violation animate-pulse" : "text-white")}>
+            <div className={cn("flex items-center gap-2 px-4 py-2 rounded-xl border", sessionTime <= 300 ? "bg-violation/10 border-violation/30" : "bg-white border-slate-200")}>
+              <Clock strokeWidth={1} className={cn("h-4 w-4", sessionTime <= 300 ? "text-violation animate-pulse" : "text-blue-600")} />
+              <span className={cn("font-mono text-lg font-semibold", sessionTime <= 300 ? "text-violation animate-pulse" : "text-slate-900")}>
                 {formatSessionTime(sessionTime)}
               </span>
-              <span className="text-xs text-text-secondary"> remaining</span>
+              <span className="text-xs text-slate-500"> remaining</span>
             </div>
           </div>
 
@@ -466,7 +466,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
             <button
               onClick={toggleFullscreen}
               disabled={requireFullscreen}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isFullscreen ? <Minimize2 strokeWidth={1} className="h-4 w-4" /> : <Maximize2 strokeWidth={1} className="h-4 w-4" />}
             </button>
@@ -475,7 +475,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
               disabled={isSubmitting}
               className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors shadow-[0_0_15px_rgba(46,204,113,0.3)]",
-                  isSubmitting ? "bg-white/20/50 text-navy-900/50" : "bg-white/20 text-navy-900 hover:bg-white/20-light"
+                  isSubmitting ? "bg-slate-200/50 text-navy-900/50" : "bg-slate-200 text-navy-900 hover:bg-slate-200-light"
               )}
             >
               <CheckCircle strokeWidth={1} className="h-4 w-4" />
@@ -485,7 +485,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
         </div>
 
         {/* Telemetry Bar */}
-        <div className="flex items-center gap-4 px-4 py-2 bg-navy-800/50 border-t border-white/5 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-4 px-4 py-2 bg-white0 border-t border-slate-100 overflow-x-auto scrollbar-hide">
           <TelemetryBadge 
             icon={User} 
             label="Face" 
@@ -510,22 +510,22 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
       {/* Main Content Area - Split Layout */}
       <main className="flex-1 mt-32 mb-4 mx-4 flex gap-6 relative">
         {/* Left Side - The Exam Interface */}
-        <div className="flex-1 glass-card p-8 flex flex-col relative z-10">
-            <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
-                <h2 className="text-2xl font-sora font-semibold text-white">Question {currentQuestionIdx + 1} of {QUESTIONS.length}</h2>
+        <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-xl p-8 flex flex-col relative z-10">
+            <div className="flex justify-between items-center mb-8 border-b border-slate-200 pb-4">
+                <h2 className="text-2xl font-sora font-semibold text-slate-900">Question {currentQuestionIdx + 1} of {QUESTIONS.length}</h2>
                 <div className="flex space-x-1">
                     {QUESTIONS.map((_, idx) => (
                         <div key={idx} className={cn(
                             "w-8 h-2 rounded-full transition-colors",
-                            idx === currentQuestionIdx ? "bg-cyan" : 
-                            answers[idx] !== undefined ? "bg-white/20/60" : "bg-white/10"
+                            idx === currentQuestionIdx ? "bg-blue-600" : 
+                            answers[idx] !== undefined ? "bg-slate-200/60" : "bg-slate-100"
                         )} />
                     ))}
                 </div>
             </div>
 
             <div className="flex-1">
-                <p className="text-xl text-white/90 leading-relaxed mb-8">{currentQ.text}</p>
+                <p className="text-xl text-slate-800 leading-relaxed mb-8">{currentQ.text}</p>
 
                 <div className="space-y-4">
                     {currentQ.options.map((opt, idx) => {
@@ -536,22 +536,22 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                             onClick={() => setAnswers({...answers, [currentQuestionIdx]: idx})}
                             className={cn(
                                 "w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center justify-between group",
-                                isSelected ? "bg-cyan/10 border-cyan shadow-[0_0_15px_rgba(0,240,255,0.15)]" : "bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10"
+                                isSelected ? "bg-blue-100/50 border-blue-600 shadow-sm" : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-100"
                             )}
                         >
-                            <span className={cn("text-lg", isSelected ? "text-cyan font-medium" : "text-white/80")}>{opt}</span>
+                            <span className={cn("text-lg", isSelected ? "text-blue-600 font-medium" : "text-slate-700")}>{opt}</span>
                             <div className={cn(
                                 "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
-                                isSelected ? "border-cyan" : "border-white/30 group-hover:border-white/50"
+                                isSelected ? "border-blue-600" : "border-slate-300 group-hover:border-slate-1000"
                             )}>
-                                {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-cyan" />}
+                                {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
                             </div>
                         </button>
                     )})}
                 </div>
             </div>
 
-            <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+            <div className="flex justify-between mt-8 pt-6 border-t border-slate-200">
                 <button
                     onClick={() => setCurrentQuestionIdx(i => Math.max(0, i - 1))}
                     disabled={currentQuestionIdx === 0}
@@ -569,7 +569,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                 ) : (
                     <button
                         onClick={handleEndExam}
-                        className="px-6 py-2.5 rounded-lg bg-white/20 text-navy-900 font-bold hover:bg-white/20-light shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-colors"
+                        className="px-6 py-2.5 rounded-lg bg-slate-200 text-navy-900 font-bold hover:bg-slate-200-light shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-colors"
                     >
                         Review & Submit
                     </button>
@@ -580,7 +580,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
         {/* Right Side - Picture-in-Picture feeds */}
         <div className="w-72 flex flex-col gap-4 relative z-10 flex-shrink-0">
           {/* Main Web Camera PiP */}
-          <div className="w-full aspect-video rounded-xl overflow-hidden bg-navy-800 border-2 border-cyan/30 shadow-[0_0_20px_rgba(0,240,255,0.1)] relative group">
+          <div className="w-full aspect-video rounded-xl overflow-hidden bg-white border-2 border-slate-300 shadow-md border-slate-300 relative group">
             <video
               ref={videoRef}
               autoPlay
@@ -589,32 +589,32 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
               className="w-full h-full object-cover"
             />
             {/* Top right label */}
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80 backdrop-blur-sm">
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50/80 backdrop-blur-sm">
                 <div className="w-2 h-2 rounded-full bg-violation animate-pulse" />
-                <span className="text-[10px] text-white/80 font-medium tracking-wider uppercase">Live Feed</span>
+                <span className="text-[10px] text-slate-700 font-medium tracking-wider uppercase">Live Feed</span>
             </div>
             
             {/* Outline box mimicking face detection */}
             {telemetryState.faceDetected && (
-              <div className="absolute inset-x-8 inset-y-6 border border-cyan/40 rounded-lg shadow-[inset_0_0_20px_rgba(0,240,255,0.1)] pointer-events-none" />
+              <div className="absolute inset-x-8 inset-y-6 border border-blue-400 rounded-lg shadow-[inset_0_0_20px_rgba(0,240,255,0.1)] pointer-events-none" />
             )}
           </div>
           
           {/* Real Mobile Feed PiP */}
-          <div className="w-full aspect-video rounded-xl overflow-hidden bg-navy-800 border-2 border-cyan/30 shadow-[0_0_20px_rgba(0,240,255,0.1)] relative group">
+          <div className="w-full aspect-video rounded-xl overflow-hidden bg-white border-2 border-slate-300 shadow-md border-slate-300 relative group">
             {mobileFrame ? (
               <img src={mobileFrame} alt="Mobile Camera Feed" className="w-full h-full object-cover" />
             ) : (
              <div className="absolute inset-0 bg-gradient-to-br from-navy-700 to-navy-800 flex items-center justify-center">
                 <div className="text-center opacity-50">
-                    <Smartphone strokeWidth={1} className="h-8 w-8 text-white/40 mx-auto mb-2 animate-pulse" />
-                    <p className="text-xs text-white/60">Waiting for Secondary Camera...</p>
+                    <Smartphone strokeWidth={1} className="h-8 w-8 text-slate-400 mx-auto mb-2 animate-pulse" />
+                    <p className="text-xs text-slate-500">Waiting for Secondary Camera...</p>
                 </div>
              </div>
             )}
-             <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-navy-900/80">
-                <div className="w-2 h-2 rounded-full bg-cyan animate-pulse" />
-                <span className="text-[10px] text-white/80 font-medium tracking-wider uppercase">Secondary Feed</span>
+             <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50/80">
+                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                <span className="text-[10px] text-slate-700 font-medium tracking-wider uppercase">Secondary Feed</span>
             </div>
           </div>
 
@@ -632,10 +632,10 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
               className={cn(
                 'flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg min-w-[320px] max-w-md',
-                toast.type === 'error' && 'bg-violation/90 text-white',
+                toast.type === 'error' && 'bg-violation/90 text-slate-900',
                 toast.type === 'warning' && 'bg-warning/90 text-navy-900',
-                toast.type === 'success' && 'bg-white/20/90 text-navy-900',
-                toast.type === 'info' && 'bg-cyan/90 text-navy-900'
+                toast.type === 'success' && 'bg-slate-200/90 text-navy-900',
+                toast.type === 'info' && 'bg-blue-600/90 text-navy-900'
               )}
             >
               {toast.type === 'error' && <AlertTriangle strokeWidth={1} className="h-5 w-5 flex-shrink-0" />}
@@ -668,12 +668,12 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-navy-900/80 backdrop-blur-md flex items-center justify-center pointer-events-auto"
+            className="fixed inset-0 z-[100] bg-slate-50/80 backdrop-blur-md flex items-center justify-center pointer-events-auto"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-navy-800 p-8 rounded-2xl max-w-lg w-full mx-4 border border-violation shadow-[0_0_50px_rgba(255,71,87,0.3)] relative overflow-hidden"
+              className="bg-white p-8 rounded-2xl max-w-lg w-full mx-4 border border-violation shadow-[0_0_50px_rgba(255,71,87,0.3)] relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-violation" />
               <div className="flex flex-col items-center text-center">
@@ -681,20 +681,20 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                   <AlertTriangle strokeWidth={1} className="h-10 w-10 text-violation" />
                 </div>
                 
-                <h3 className="font-sora text-3xl font-bold text-white mb-2">Automated Alert</h3>
+                <h3 className="font-sora text-3xl font-bold text-slate-900 mb-2">Automated Alert</h3>
                 <p className="text-xl text-violation font-medium mb-6">
                     {getViolationDescription(realViolations[0].type)}
                 </p>
                 
-                <div className="bg-white/5 p-4 rounded-xl mb-8 w-full">
-                    <p className="text-white/80 text-sm">
+                <div className="bg-white p-4 rounded-xl mb-8 w-full">
+                    <p className="text-slate-700 text-sm">
                         This incident has been logged and recorded by the proctoring system. Continued violations may result in immediate termination of the exam.
                     </p>
                 </div>
               
                 <button 
                   onClick={clearViolations}
-                  className="w-full py-4 rounded-xl bg-violation text-white font-bold text-lg hover:bg-violation/90 transition-colors shadow-lg shadow-violation/20"
+                  className="w-full py-4 rounded-xl bg-violation text-slate-900 font-bold text-lg hover:bg-violation/90 transition-colors shadow-lg shadow-violation/20"
                 >
                   I Understand & Resume Exam
                 </button>
@@ -716,17 +716,17 @@ interface TelemetryBadgeProps {
 
 function TelemetryBadge({ icon: Icon, label, value, status }: TelemetryBadgeProps) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 flex-shrink-0">
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-100 flex-shrink-0">
       <Icon className={cn(
         'h-3.5 w-3.5',
-        status === 'good' ? 'text-white/60' :
+        status === 'good' ? 'text-slate-500' :
         status === 'warning' ? 'text-warning' : 
         'text-violation'
       )} />
-      <span className="text-xs text-white/60">{label}:</span>
+      <span className="text-xs text-slate-500">{label}:</span>
       <span className={cn(
         'text-xs font-medium',
-        status === 'good' ? 'text-white/60' :
+        status === 'good' ? 'text-slate-500' :
         status === 'warning' ? 'text-warning' : 
         'text-violation'
       )}>{value}</span>

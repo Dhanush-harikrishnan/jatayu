@@ -67,14 +67,14 @@ export function StudentDashboard() {
         );
       case 'upcoming':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan/10 px-3 py-1 text-xs font-medium text-cyan border border-cyan/20">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100/50 px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600/20">
             <Calendar strokeWidth={1} className="h-3 w-3" />
             Upcoming
           </span>
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/60 border border-white/10">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 border border-slate-200">
             <CheckCircle strokeWidth={1} className="h-3 w-3" />
             Completed
           </span>
@@ -83,31 +83,31 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-navy-900">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-navy-900/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-100 bg-slate-50/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 py-4 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan/10">
-              <Shield strokeWidth={1} className="h-6 w-6 text-cyan" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100/50">
+              <Shield strokeWidth={1} className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="font-sora text-lg font-bold text-white">SecureGuard</h1>
-              <p className="text-xs text-text-secondary">Student Portal</p>
+              <h1 className="font-sora text-lg font-bold text-slate-900">SecureGuard</h1>
+              <p className="text-xs text-slate-500">Student Portal</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="hidden text-right md:block">
-              <p className="text-sm font-medium text-white">John Doe</p>
-              <p className="text-xs text-text-secondary">Student ID: STU-2024-001</p>
+              <p className="text-sm font-medium text-slate-900">John Doe</p>
+              <p className="text-xs text-slate-500">Student ID: STU-2024-001</p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan/10">
-              <User strokeWidth={1} className="h-5 w-5 text-cyan" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100/50">
+              <User strokeWidth={1} className="h-5 w-5 text-blue-600" />
             </div>
             <button 
               onClick={() => window.location.href = '/login'}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-900 transition-colors"
             >
               <LogOut strokeWidth={1} className="h-5 w-5" />
             </button>
@@ -126,20 +126,20 @@ export function StudentDashboard() {
           {/* Welcome Section */}
           <motion.div variants={itemVariants} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="font-sora text-3xl font-bold text-white">
+              <h2 className="font-sora text-3xl font-bold text-slate-900">
                 Welcome back, John!
               </h2>
-              <p className="mt-1 text-text-secondary">
+              <p className="mt-1 text-slate-500">
                 You have {activeExams.length} active and {upcomingExams.length} upcoming exams
               </p>
             </div>
-            <div className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 border border-white/10">
-              <Clock strokeWidth={1} className="h-5 w-5 text-cyan" />
-              <span className="font-mono text-sm text-white">
+            <div className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 border border-slate-200">
+              <Clock strokeWidth={1} className="h-5 w-5 text-blue-600" />
+              <span className="font-mono text-sm text-slate-900">
                 {currentTime.toLocaleTimeString('en-US', { hour12: false })}
               </span>
-              <span className="text-white/30">|</span>
-              <span className="text-sm text-text-secondary">
+              <span className="text-slate-900/30">|</span>
+              <span className="text-sm text-slate-500">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -147,10 +147,10 @@ export function StudentDashboard() {
 
           {/* Stats Cards */}
           <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-3">
-            <div className="glass-card p-6">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-text-secondary">Active Exams</p>
+                  <p className="text-sm text-slate-500">Active Exams</p>
                   <p className="mt-1 font-sora text-3xl font-bold text-success">{activeExams.length}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
@@ -158,25 +158,25 @@ export function StudentDashboard() {
                 </div>
               </div>
             </div>
-            <div className="glass-card p-6">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-text-secondary">Upcoming</p>
-                  <p className="mt-1 font-sora text-3xl font-bold text-cyan">{upcomingExams.length}</p>
+                  <p className="text-sm text-slate-500">Upcoming</p>
+                  <p className="mt-1 font-sora text-3xl font-bold text-blue-600">{upcomingExams.length}</p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan/10">
-                  <Calendar strokeWidth={1} className="h-6 w-6 text-cyan" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100/50">
+                  <Calendar strokeWidth={1} className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </div>
-            <div className="glass-card p-6">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-text-secondary">Completed</p>
-                  <p className="mt-1 font-sora text-3xl font-bold text-white/60">{completedExams.length}</p>
+                  <p className="text-sm text-slate-500">Completed</p>
+                  <p className="mt-1 font-sora text-3xl font-bold text-slate-500">{completedExams.length}</p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                  <CheckCircle strokeWidth={1} className="h-6 w-6 text-white/60" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+                  <CheckCircle strokeWidth={1} className="h-6 w-6 text-slate-500" />
                 </div>
               </div>
             </div>
@@ -185,7 +185,7 @@ export function StudentDashboard() {
           {/* Active Exams Section */}
           {activeExams.length > 0 && (
             <motion.div variants={itemVariants} className="space-y-4">
-              <h3 className="font-sora text-xl font-semibold text-white flex items-center gap-2">
+              <h3 className="font-sora text-xl font-semibold text-slate-900 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
                 Active Exams
               </h3>
@@ -200,7 +200,7 @@ export function StudentDashboard() {
           {/* Upcoming Exams Section */}
           {upcomingExams.length > 0 && (
             <motion.div variants={itemVariants} className="space-y-4">
-              <h3 className="font-sora text-xl font-semibold text-white">Upcoming Exams</h3>
+              <h3 className="font-sora text-xl font-semibold text-slate-900">Upcoming Exams</h3>
               <div className="grid gap-4">
                 {upcomingExams.map((exam) => (
                   <ExamCard key={exam.id} exam={exam} statusBadge={getStatusBadge(exam.status)} />
@@ -212,7 +212,7 @@ export function StudentDashboard() {
           {/* Completed Exams Section */}
           {completedExams.length > 0 && (
             <motion.div variants={itemVariants} className="space-y-4">
-              <h3 className="font-sora text-xl font-semibold text-white/60">Completed Exams</h3>
+              <h3 className="font-sora text-xl font-semibold text-slate-500">Completed Exams</h3>
               <div className="grid gap-4">
                 {completedExams.map((exam) => (
                   <ExamCard key={exam.id} exam={exam} statusBadge={getStatusBadge(exam.status)} />
@@ -238,7 +238,7 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
     <motion.div
       whileHover={{ scale: 1.005 }}
       className={cn(
-        'glass-card p-6 transition-all',
+        'bg-white border border-slate-200 shadow-sm rounded-xl p-6 transition-all',
         exam.status === 'active' && 'border-success/30 shadow-glow-cyan'
       )}
     >
@@ -246,24 +246,24 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             {statusBadge}
-            <span className="text-xs text-text-secondary font-mono">
+            <span className="text-xs text-slate-500 font-mono">
               ID: {exam.id}
             </span>
           </div>
-          <h4 className="font-sora text-lg font-semibold text-white">{exam.title}</h4>
-          <p className="mt-1 text-sm text-text-secondary line-clamp-2">{exam.description}</p>
+          <h4 className="font-sora text-lg font-semibold text-slate-900">{exam.title}</h4>
+          <p className="mt-1 text-sm text-slate-500 line-clamp-2">{exam.description}</p>
           
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-            <div className="flex items-center gap-1.5 text-white/70">
-              <Timer strokeWidth={1} className="h-4 w-4 text-cyan" />
+            <div className="flex items-center gap-1.5 text-slate-900/70">
+              <Timer strokeWidth={1} className="h-4 w-4 text-blue-600" />
               <span>{formatDuration(exam.duration)}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-white/70">
-              <BookOpen strokeWidth={1} className="h-4 w-4 text-cyan" />
+            <div className="flex items-center gap-1.5 text-slate-900/70">
+              <BookOpen strokeWidth={1} className="h-4 w-4 text-blue-600" />
               <span>{exam.totalQuestions} questions</span>
             </div>
-            <div className="flex items-center gap-1.5 text-white/70">
-              <Calendar strokeWidth={1} className="h-4 w-4 text-cyan" />
+            <div className="flex items-center gap-1.5 text-slate-900/70">
+              <Calendar strokeWidth={1} className="h-4 w-4 text-blue-600" />
               <span>{formatDateTime(exam.startTime)}</span>
             </div>
           </div>
@@ -282,7 +282,7 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
           {exam.status === 'active' && exam.enabled === false && (
             <button
               disabled
-              className="rounded-xl bg-white/5 px-4 py-2 text-sm font-medium text-white/40 border border-white/10 cursor-not-allowed whitespace-nowrap"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-400 border border-slate-200 cursor-not-allowed whitespace-nowrap"
             >
               Disabled By Admin
             </button>
@@ -290,14 +290,14 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
           {exam.status === 'upcoming' && (
             <button
               disabled
-              className="rounded-xl bg-white/5 px-4 py-2 text-sm font-medium text-white/40 border border-white/10 cursor-not-allowed whitespace-nowrap"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-400 border border-slate-200 cursor-not-allowed whitespace-nowrap"
             >
               Not Started
             </button>
           )}
           {exam.status === 'completed' && (
             <button
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors whitespace-nowrap"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors whitespace-nowrap"
             >
               View Results
             </button>
@@ -306,15 +306,15 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
       </div>
 
       {exam.status === 'active' && exam.instructions.length > 0 && (
-        <div className="mt-4 rounded-xl bg-cyan/5 p-4 border border-cyan/10">
+        <div className="mt-4 rounded-xl bg-blue-50/50 p-4 border border-blue-600/10">
           <div className="flex items-center gap-2 mb-2">
-            <AlertCircle strokeWidth={1} className="h-4 w-4 text-cyan" />
-            <span className="text-sm font-medium text-cyan">Important Instructions</span>
+            <AlertCircle strokeWidth={1} className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-600">Important Instructions</span>
           </div>
           <ul className="space-y-1">
             {exam.instructions.slice(0, 3).map((instruction, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-white/70">
-                <span className="mt-1.5 h-1 w-1 rounded-full bg-cyan flex-shrink-0" />
+              <li key={idx} className="flex items-start gap-2 text-sm text-slate-900/70">
+                <span className="mt-1.5 h-1 w-1 rounded-full bg-blue-600 flex-shrink-0" />
                 {instruction}
               </li>
             ))}

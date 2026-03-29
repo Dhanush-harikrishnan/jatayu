@@ -135,6 +135,8 @@ function normalizeViolationType(raw: string): string {
   switch (upper) {
     case 'PHONE_DETECTED':
       return 'phone_detected';
+    case 'BOOK_DETECTED':
+      return 'book_detected';
     case 'MULTIPLE_PERSONS_DETECTED':
       return 'multiple_faces';
     case 'MULTIPLE_PERSONS_DETECTED_MOBILE':
@@ -161,6 +163,7 @@ function severityForType(type: string): 'low' | 'medium' | 'high' | 'critical' {
     case 'multiple_faces':
     case 'multiple_faces_mobile':
     case 'phone_detected':
+    case 'book_detected':
     case 'copy_paste_attempt':
     case 'voice_detected':
     case 'multiple_laptops':
@@ -188,6 +191,8 @@ function descriptionForType(type: string): string {
       return 'Candidate looking away from screen';
     case 'phone_detected':
       return 'Mobile phone detected';
+    case 'book_detected':
+      return 'Book or document detected';
     case 'gyro_movement':
       return 'Significant device movement detected';
     case 'copy_paste_attempt':
