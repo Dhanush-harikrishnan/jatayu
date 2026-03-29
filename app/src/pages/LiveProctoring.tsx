@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Clock, AlertTriangle, CheckCircle, X,
@@ -120,6 +120,13 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
   const allowNavigationRef = useRef(false);
   const socketRef = useRef<Socket | null>(null);
 
+  const addToast = useCallback((toast: Toast) => {
+    setToasts(prev => [toast, ...prev].slice(0, 5));
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toast.id));
+    }, 5000);
+  }, []);
+
   // Connect socket.io so the backend correlation engine gets frames and
   // the explicit 'end-exam' event can be sent when the student finishes.
   useEffect(() => {
@@ -187,14 +194,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, []);
-
-  const addToast = (toast: Toast) => {
-    setToasts(prev => [toast, ...prev].slice(0, 5));
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== toast.id));
-    }, 5000);
-  };
+  }, [addToast]);
 
   // Session timer & navigation protection
   useEffect(() => {
@@ -251,7 +251,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
     return () => {
       document.removeEventListener('fullscreenchange', onFullscreenChange);
     };
-  }, [requireFullscreen]);
+  }, [requireFullscreen, addToast]);
 
   // Camera initialization
   useEffect(() => {
@@ -354,7 +354,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
 
     const interval = setInterval(captureAndAnalyze, 3000); // Analyze every 3 seconds
     return () => clearInterval(interval);
-  }, [examId, realViolations]);
+  }, [examId, realViolations, addToast]);
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
