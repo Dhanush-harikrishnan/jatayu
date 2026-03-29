@@ -146,6 +146,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
         'PHONE_DETECTED': 'Phone detected by secondary camera',
         'MULTIPLE_LAPTOPS_DETECTED': 'Multiple laptops detected by secondary camera',
         'PHONE_MOVEMENT_DETECTED': 'Significant phone movement detected',
+        'MULTIPLE_PERSONS_DETECTED_MOBILE': 'Multiple persons detected by secondary camera',
       };
       const description = mobileDescriptions[data.violationType] || `Secondary camera: ${data.violationType}`;
       const newViolation: Violation = {
