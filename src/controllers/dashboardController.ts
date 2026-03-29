@@ -542,10 +542,13 @@ export const terminateSession = async (req: Request, res: Response, next: NextFu
       return res.status(400).json({ success: false, message: 'Session ID is required' });
     }
 
+    const sessionRecord = sessionRegistry.get(sessionId);
+    const examId = sessionRecord?.examId;
+
     // 1. Delete all S3 evidence (primary + secondary + exam frames)
     let s3Deleted = 0;
     try {
-      s3Deleted = await awsService.deleteSessionEvidence(sessionId);
+      s3Deleted = await awsService.deleteSessionEvidence(sessionId, examId);
     } catch (err: any) {
       console.error(`[terminateSession] S3 cleanup failed: ${err?.message}`);
     }

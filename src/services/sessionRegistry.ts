@@ -61,6 +61,10 @@ export const sessionRegistry = {
     sessions.delete(sessionId);
   },
 
+  get(sessionId: string): SessionRecord | undefined {
+    return sessions.get(sessionId);
+  },
+
   list(): SessionRecord[] {
     return Array.from(sessions.values());
   },
