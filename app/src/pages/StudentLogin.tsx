@@ -49,7 +49,7 @@ export function StudentLogin() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Email Field */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-800">
             Email Address
           </label>
           <div className="relative">
@@ -59,7 +59,7 @@ export function StudentLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="student@university.edu"
-              className="input-dark w-full pl-12"
+              className="border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all rounded-lg w-full pl-12"
               required
               aria-label="Email address"
             />
@@ -68,7 +68,7 @@ export function StudentLogin() {
 
         {/* Password Field */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-800">
             Password
           </label>
           <div className="relative">
@@ -78,7 +78,7 @@ export function StudentLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="input-dark w-full pl-12 pr-12"
+              className="border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all rounded-lg w-full pl-12 pr-12"
               required
               minLength={6}
               aria-label="Password"
@@ -99,7 +99,7 @@ export function StudentLogin() {
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-cyan/30"
+              className="h-4 w-4 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-600/30"
             />
             <span className="text-slate-500">Remember me</span>
           </label>
@@ -146,7 +146,7 @@ export function StudentLogin() {
           type="submit"
           disabled={isLoading || success}
           className={cn(
-            'btn-primary w-full flex items-center justify-center gap-2',
+            'bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors w-full flex items-center justify-center gap-2',
             (isLoading || success) && 'opacity-70 cursor-not-allowed'
           )}
         >
@@ -179,7 +179,7 @@ export function StudentLogin() {
         {/* SSO Button */}
         <button
           type="button"
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-all hover:bg-slate-100 hover:border-slate-300 flex items-center justify-center gap-2"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition-all hover:bg-slate-100 hover:border-slate-300 flex items-center justify-center gap-2"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path

@@ -273,7 +273,7 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
           {canStart && (
             <a
               href={`/exam/${exam.id}/start`}
-              className="btn-primary flex items-center gap-2 whitespace-nowrap"
+              className="bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
             >
               Start Exam
               <ChevronRight strokeWidth={1} className="h-4 w-4" />

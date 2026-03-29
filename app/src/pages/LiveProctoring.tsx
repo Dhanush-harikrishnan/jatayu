@@ -475,7 +475,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
               disabled={isSubmitting}
               className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors shadow-[0_0_15px_rgba(46,204,113,0.3)]",
-                  isSubmitting ? "bg-slate-200/50 text-navy-900/50" : "bg-slate-200 text-navy-900 hover:bg-slate-200-light"
+                  isSubmitting ? "bg-slate-200/50 text-slate-900/50" : "bg-slate-200 text-slate-900 hover:bg-slate-200-light"
               )}
             >
               <CheckCircle strokeWidth={1} className="h-4 w-4" />
@@ -525,7 +525,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
             </div>
 
             <div className="flex-1">
-                <p className="text-xl text-slate-800 leading-relaxed mb-8">{currentQ.text}</p>
+                <p className="text-xl text-slate-900 leading-relaxed mb-8">{currentQ.text}</p>
 
                 <div className="space-y-4">
                     {currentQ.options.map((opt, idx) => {
@@ -539,7 +539,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                                 isSelected ? "bg-blue-100/50 border-blue-600 shadow-sm" : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-100"
                             )}
                         >
-                            <span className={cn("text-lg", isSelected ? "text-blue-600 font-medium" : "text-slate-700")}>{opt}</span>
+                            <span className={cn("text-lg", isSelected ? "text-blue-600 font-medium" : "text-slate-800")}>{opt}</span>
                             <div className={cn(
                                 "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
                                 isSelected ? "border-blue-600" : "border-slate-300 group-hover:border-slate-1000"
@@ -555,21 +555,21 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                 <button
                     onClick={() => setCurrentQuestionIdx(i => Math.max(0, i - 1))}
                     disabled={currentQuestionIdx === 0}
-                    className="px-6 py-2.5 rounded-lg btn-outline disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                     Previous
                 </button>
                 {currentQuestionIdx < QUESTIONS.length - 1 ? (
                     <button
                         onClick={() => setCurrentQuestionIdx(i => i + 1)}
-                        className="px-6 py-2.5 rounded-lg btn-primary"
+                        className="px-6 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors"
                     >
                         Next Question
                     </button>
                 ) : (
                     <button
                         onClick={handleEndExam}
-                        className="px-6 py-2.5 rounded-lg bg-slate-200 text-navy-900 font-bold hover:bg-slate-200-light shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-colors"
+                        className="px-6 py-2.5 rounded-lg bg-slate-200 text-slate-900 font-bold hover:bg-slate-200-light shadow-[0_0_15px_rgba(46,204,113,0.3)] transition-colors"
                     >
                         Review & Submit
                     </button>
@@ -591,7 +591,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
             {/* Top right label */}
             <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50/80 backdrop-blur-sm">
                 <div className="w-2 h-2 rounded-full bg-violation animate-pulse" />
-                <span className="text-[10px] text-slate-700 font-medium tracking-wider uppercase">Live Feed</span>
+                <span className="text-[10px] text-slate-800 font-medium tracking-wider uppercase">Live Feed</span>
             </div>
             
             {/* Outline box mimicking face detection */}
@@ -605,7 +605,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
             {mobileFrame ? (
               <img src={mobileFrame} alt="Mobile Camera Feed" className="w-full h-full object-cover" />
             ) : (
-             <div className="absolute inset-0 bg-gradient-to-br from-navy-700 to-navy-800 flex items-center justify-center">
+             <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-white flex items-center justify-center">
                 <div className="text-center opacity-50">
                     <Smartphone strokeWidth={1} className="h-8 w-8 text-slate-400 mx-auto mb-2 animate-pulse" />
                     <p className="text-xs text-slate-500">Waiting for Secondary Camera...</p>
@@ -614,7 +614,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
             )}
              <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50/80">
                 <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                <span className="text-[10px] text-slate-700 font-medium tracking-wider uppercase">Secondary Feed</span>
+                <span className="text-[10px] text-slate-800 font-medium tracking-wider uppercase">Secondary Feed</span>
             </div>
           </div>
 
@@ -633,9 +633,9 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
               className={cn(
                 'flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg min-w-[320px] max-w-md',
                 toast.type === 'error' && 'bg-violation/90 text-slate-900',
-                toast.type === 'warning' && 'bg-warning/90 text-navy-900',
-                toast.type === 'success' && 'bg-slate-200/90 text-navy-900',
-                toast.type === 'info' && 'bg-blue-600/90 text-navy-900'
+                toast.type === 'warning' && 'bg-warning/90 text-slate-900',
+                toast.type === 'success' && 'bg-slate-200/90 text-slate-900',
+                toast.type === 'info' && 'bg-blue-600/90 text-slate-900'
               )}
             >
               {toast.type === 'error' && <AlertTriangle strokeWidth={1} className="h-5 w-5 flex-shrink-0" />}
@@ -687,7 +687,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
                 </p>
                 
                 <div className="bg-white p-4 rounded-xl mb-8 w-full">
-                    <p className="text-slate-700 text-sm">
+                    <p className="text-slate-800 text-sm">
                         This incident has been logged and recorded by the proctoring system. Continued violations may result in immediate termination of the exam.
                     </p>
                 </div>

@@ -531,7 +531,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                       type="checkbox" 
                       checked={rulesAccepted} 
                       onChange={e => setRulesAccepted(e.target.checked)} 
-                      className="rounded border-blue-600/30 text-blue-600 focus:ring-cyan bg-white"
+                      className="rounded border-blue-600/30 text-blue-600 focus:ring-blue-600 bg-white"
                     />
                     I understand and agree to the proctoring rules
                   </label>
@@ -542,7 +542,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                     onClick={handleNextStep} 
                     disabled={!examEnabled || reqStatus.screen !== 'passed' || !rulesAccepted}
                     className={cn(
-                      'btn-primary flex items-center gap-2',
+                      'bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2',
                       (!examEnabled || reqStatus.screen !== 'passed' || !rulesAccepted) && 'opacity-50 cursor-not-allowed'
                     )}
                   >
@@ -611,7 +611,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                             type="text"
                             value={pairingCode}
                             readOnly
-                            className="input-dark w-full text-center font-mono text-2xl tracking-widest"
+                            className="border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all rounded-lg w-full text-center font-mono text-2xl tracking-widest"
                           />
                         </div>
                         <button
@@ -675,14 +675,14 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 </div>
 
                 <div className="flex justify-between">
-                  <button onClick={handlePrevStep} className="btn-outline">
+                  <button onClick={handlePrevStep} className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 font-semibold py-3 px-6 rounded-lg transition-colors">
                     Back
                   </button>
                   <button 
                     onClick={handleNextStep} 
                     disabled={!isPaired}
                     className={cn(
-                      'btn-primary flex items-center gap-2',
+                      'bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2',
                       !isPaired && 'opacity-50 cursor-not-allowed'
                     )}
                   >
@@ -801,14 +801,14 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 </div>
 
                 <div className="flex justify-between">
-                  <button onClick={handlePrevStep} className="btn-outline">
+                  <button onClick={handlePrevStep} className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 font-semibold py-3 px-6 rounded-lg transition-colors">
                     Back
                   </button>
                   <button 
                     onClick={handleNextStep}
                     disabled={cameraPermission !== true || setupFaceCheck !== 'detected'}
                     className={cn(
-                      'btn-primary flex items-center gap-2',
+                      'bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2',
                       (cameraPermission !== true || setupFaceCheck !== 'detected') && 'opacity-50 cursor-not-allowed'
                     )}
                   >
@@ -905,14 +905,14 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                 </div>
 
                 <div className="flex justify-between">
-                  <button onClick={handlePrevStep} className="btn-outline">
+                  <button onClick={handlePrevStep} className="border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 font-semibold py-3 px-6 rounded-lg transition-colors">
                     Back
                   </button>
                   <button
                     onClick={handleNextStep}
                     disabled={!livenessPassed}
                     className={cn(
-                      'btn-primary flex items-center gap-2',
+                      'bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors flex items-center gap-2',
                       !livenessPassed && 'opacity-50 cursor-not-allowed'
                     )}
                   >

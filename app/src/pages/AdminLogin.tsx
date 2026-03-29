@@ -86,7 +86,7 @@ export function AdminLogin() {
           >
             {/* Email Field */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-800">
                 Admin Email
               </label>
               <div className="relative">
@@ -96,7 +96,7 @@ export function AdminLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@institution.edu"
-                  className="input-dark w-full pl-12"
+                  className="border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all rounded-lg w-full pl-12"
                   required
                   aria-label="Admin email"
                 />
@@ -105,7 +105,7 @@ export function AdminLogin() {
 
             {/* Password Field */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-800">
                 Password
               </label>
               <div className="relative">
@@ -115,7 +115,7 @@ export function AdminLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="input-dark w-full pl-12 pr-12"
+                  className="border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all rounded-lg w-full pl-12 pr-12"
                   required
                   minLength={6}
                   aria-label="Password"
@@ -151,7 +151,7 @@ export function AdminLogin() {
               type="submit"
               disabled={isLoading}
               className={cn(
-                'btn-primary w-full flex items-center justify-center gap-2',
+                'bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors w-full flex items-center justify-center gap-2',
                 isLoading && 'opacity-70 cursor-not-allowed'
               )}
             >
@@ -173,7 +173,7 @@ export function AdminLogin() {
             <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50/50 border border-blue-600/10">
               <Shield strokeWidth={1} className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-slate-700">Enhanced Security Required</p>
+                <p className="text-sm text-slate-800">Enhanced Security Required</p>
                 <p className="text-xs text-slate-500 mt-1">
                   All admin access requires two-factor authentication and is logged for compliance.
                 </p>
@@ -210,7 +210,7 @@ export function AdminLogin() {
 
             {/* OTP Input */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-800">
                 Verification Code
               </label>
               <input
@@ -218,7 +218,7 @@ export function AdminLogin() {
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="000000"
-                className="input-dark w-full text-center font-mono text-2xl tracking-[0.5em]"
+                className="border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-all rounded-lg w-full text-center font-mono text-2xl tracking-[0.5em]"
                 maxLength={6}
                 inputMode="numeric"
                 autoFocus
@@ -260,7 +260,7 @@ export function AdminLogin() {
               type="submit"
               disabled={isLoading || otpCode.length !== 6}
               className={cn(
-                'btn-primary w-full flex items-center justify-center gap-2',
+                'bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors w-full flex items-center justify-center gap-2',
                 (isLoading || otpCode.length !== 6) && 'opacity-70 cursor-not-allowed'
               )}
             >
