@@ -143,7 +143,8 @@ export const analyzeSetupFrame = async (req: Request, res: Response, next: NextF
     }
 
     const buffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
-    const s3Key = `exams/${examId}/${userSession.sessionId}/${Date.now()}_setup-frame.jpg`;
+    // Save to the evidence/ folder so that `deleteSessionEvidence` can clean it up automatically
+    const s3Key = `evidence/${userSession.sessionId}/setup/${Date.now()}_setup-frame.jpg`;
 
     // Step 1: Upload to S3
     try {
@@ -244,6 +245,37 @@ export const analyzeSetupFrame = async (req: Request, res: Response, next: NextF
       });
     }
 
+    // Always log the setup face reference image so we have an avatar!
+    const timestamp = new Date().toISOString();
+    const metadata = {
+      confidence: primaryFace?.Confidence ? primaryFace.Confidence / 100 : 0.9,
+      faceDetails: facesRes.FaceDetails?.map((f: any) => ({
+        confidence: f.Confidence,
+        emotions: f.Emotions?.map((e: any) => ({ type: e.Type, confidence: e.Confidence })) || [],
+        eyeGaze: { yaw: f.Pose?.Yaw, pitch: f.Pose?.Pitch },
+        sunglasses: { value: f.Sunglasses?.Value, confidence: f.Sunglasses?.Confidence },
+        eyeglasses: { value: f.Eyeglasses?.Value, confidence: f.Eyeglasses?.Confidence }
+      })) || [],
+      labels: labelsRes.Labels?.map((l: any) => ({ name: l.Name, confidence: l.Confidence })) || [],
+      moderation: []
+    };
+    try {
+      await awsService.logViolationEvent(
+        userSession.sessionId,
+        timestamp,
+        'SETUP_FACE_REFERENCE',
+        s3Key,
+        metadata,
+        {
+          userId: userSession.userId,
+          studentName: (userSession as any).name,
+          examId: userSession.examId,
+        }
+      );
+    } catch (dbErr: any) {
+      logger.error(`[analyzeSetupFrame] DynamoDB log SETUP_FACE_REFERENCE failed: [${dbErr?.name}] ${dbErr?.message}`);
+    }
+
     return res.json({
       success: true,
       violationDetected: false,
@@ -271,7 +303,8 @@ export const analyzeLiveFrame = async (req: Request, res: Response, next: NextFu
     }
 
     const buffer = Buffer.from(imageBase64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
-    const s3Key = `exams/${examId}/${userSession.sessionId}/${Date.now()}_live-frame.jpg`;
+    // Save to the evidence/ folder so that `deleteSessionEvidence` can clean it up automatically
+    const s3Key = `evidence/${userSession.sessionId}/live/${Date.now()}_live-frame.jpg`;
 
     await awsService.uploadEvidenceToS3(s3Key, imageBase64);
 

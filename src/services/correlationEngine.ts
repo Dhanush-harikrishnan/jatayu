@@ -62,8 +62,9 @@ export class CorrelationEngine {
     }
     if (event.type === 'MOBILE_FRAME' && event.evidenceKey) {
       this.lastSecondaryEvidenceKey = event.evidenceKey;
-      if (event.data?.rekognitionMetadata) {
-        this.lastSecondaryMetadata = event.data.rekognitionMetadata;
+      if (event.data) {
+        // we might have rekognitionMetadata or just generic data like laptopCount
+        this.lastSecondaryMetadata = event.data.rekognitionMetadata || event.data;
       }
     }
     // Also capture special detection metadata from PHONE_DETECTED events
@@ -154,6 +155,11 @@ export class CorrelationEngine {
     if (latestMobileFrame && (latestMobileFrame.data.laptopCount || 0) > 1) {
       this.triggerCriticalViolation('MULTIPLE_LAPTOPS_DETECTED');
     }
+
+    // Rule I: MULTIPLE_PERSONS_DETECTED_MOBILE (from mobile camera)
+    if (latestMobileFrame && (latestMobileFrame.data.multiplePersonsDetected || false)) {
+      this.triggerCriticalViolation('MULTIPLE_PERSONS_DETECTED_MOBILE');
+    }
   }
 
   private async triggerCriticalViolation(violationType: string) {
@@ -167,7 +173,7 @@ export class CorrelationEngine {
     const isoTimestamp = new Date().toISOString();
     // Use the last known evidence key; fall back to a placeholder so the event still persists.
     // Select evidence key: mobile violations should prefer mobile snapshots
-    const isMobileViolation = ['PHONE_DETECTED', 'PHONE_MOVEMENT_DETECTED', 'MULTIPLE_LAPTOPS_DETECTED'].includes(violationType);
+    const isMobileViolation = ['PHONE_DETECTED', 'PHONE_MOVEMENT_DETECTED', 'MULTIPLE_LAPTOPS_DETECTED', 'MULTIPLE_PERSONS_DETECTED_MOBILE'].includes(violationType);
     const s3Key = (isMobileViolation ? this.lastSecondaryEvidenceKey : this.lastPrimaryEvidenceKey) 
                 || this.lastPrimaryEvidenceKey 
                 || this.lastSecondaryEvidenceKey

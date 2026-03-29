@@ -137,6 +137,10 @@ function normalizeViolationType(raw: string): string {
       return 'phone_detected';
     case 'MULTIPLE_PERSONS_DETECTED':
       return 'multiple_faces';
+    case 'MULTIPLE_PERSONS_DETECTED_MOBILE':
+      return 'multiple_faces_mobile';
+    case 'MULTIPLE_LAPTOPS_DETECTED':
+      return 'multiple_laptops';
     case 'FACE_NOT_DETECTED':
       return 'face_not_detected';
     case 'LOOKING_AWAY':
@@ -155,9 +159,11 @@ function normalizeViolationType(raw: string): string {
 function severityForType(type: string): 'low' | 'medium' | 'high' | 'critical' {
   switch (type) {
     case 'multiple_faces':
+    case 'multiple_faces_mobile':
     case 'phone_detected':
     case 'copy_paste_attempt':
     case 'voice_detected':
+    case 'multiple_laptops':
       return 'high';
     case 'face_not_detected':
     case 'looking_away':
@@ -172,6 +178,10 @@ function descriptionForType(type: string): string {
   switch (type) {
     case 'multiple_faces':
       return 'Multiple faces detected in frame';
+    case 'multiple_faces_mobile':
+      return 'Multiple persons detected via secondary camera';
+    case 'multiple_laptops':
+      return 'Multiple laptops/monitors detected via secondary camera';
     case 'face_not_detected':
       return 'Face not visible to camera';
     case 'looking_away':
@@ -206,6 +216,7 @@ export const getAdminStudents = async (req: Request, res: Response, next: NextFu
         firstTime: number;
         lastTime: number;
         violationCount: number;
+        setupEvidenceKey?: string;
       }
     >();
 
@@ -237,21 +248,38 @@ export const getAdminStudents = async (req: Request, res: Response, next: NextFu
         existing.lastTime = Math.max(existing.lastTime, t);
       }
 
-      bySession.get(sessionId)!.violationCount += (item.ViolationType?.S && item.ViolationType.S !== 'SESSION_STARTED') ? 1 : 0;
+      if (item.ViolationType?.S === 'SETUP_FACE_REFERENCE' && item.EvidenceKey?.S) {
+        bySession.get(sessionId)!.setupEvidenceKey = item.EvidenceKey.S;
+      }
+
+      const isNonViolation = ['SESSION_STARTED', 'SETUP_FACE_REFERENCE'].includes(item.ViolationType?.S || '');
+      bySession.get(sessionId)!.violationCount += (!isNonViolation && item.ViolationType?.S) ? 1 : 0;
     }
 
-    const students = Array.from(bySession.values()).map(s => ({
-      sessionId: s.sessionId,
-      studentId: s.studentId,
-      studentName: s.studentName,
-      examTitle: s.examTitle,
-      status: s.violationCount > 0 ? 'violation' : 'online',
-      joinTime: new Date(s.firstTime).toISOString(),
-      lastActivity: new Date(s.lastTime).toISOString(),
-      violationCount: s.violationCount,
+    const students = await Promise.all(Array.from(bySession.values()).map(async s => {
+      let studentAvatar: string | undefined;
+      if (s.setupEvidenceKey) {
+        try {
+          studentAvatar = await awsService.generateGetPresignedUrl(s.setupEvidenceKey);
+        } catch (e) {
+          studentAvatar = undefined;
+        }
+      }
+
+      return {
+        sessionId: s.sessionId,
+        studentId: s.studentId,
+        studentName: s.studentName,
+        examTitle: s.examTitle,
+        status: s.violationCount > 0 ? 'violation' : 'online',
+        joinTime: new Date(s.firstTime).toISOString(),
+        lastActivity: new Date(s.lastTime).toISOString(),
+        violationCount: s.violationCount,
+        studentAvatar,
+      };
     }));
 
-    const existingSessionIds = new Set(students.map(s => s.sessionId));
+    const existingSessionIds = new Set(students.map((s: any) => s.sessionId));
     const registryOnlyStudents = sessionRegistry
       .list()
       .filter(s => !existingSessionIds.has(s.sessionId))
@@ -286,7 +314,7 @@ export const getAdminViolations = async (req: Request, res: Response, next: Next
     const normalized = (result.Items || [])
       .filter((item: any) => {
         const vt = item.ViolationType?.S;
-        return vt && vt !== 'undefined' && vt !== 'TEST_VIOLATION' && vt !== 'SESSION_STARTED';
+        return vt && vt !== 'undefined' && vt !== 'TEST_VIOLATION' && vt !== 'SESSION_STARTED' && vt !== 'SETUP_FACE_REFERENCE';
       })
       .map((item: any) => {
         const rawType: string = item.ViolationType?.S;

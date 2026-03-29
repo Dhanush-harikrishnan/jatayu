@@ -61,10 +61,19 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         const res = await awsService.detectLabels(buffer);
         const labels = res.Labels || [];
 
-        // Ignore Person/Human labels — the test-taker's body/hands are always visible
+        // Ignore certain labels if necessary, but keep Person/Human to detect multiple people
         const filteredLabels = labels.filter(l =>
-          l.Name !== 'Person' && l.Name !== 'Human' && l.Name !== 'Face' && l.Name !== 'Head'
+          l.Name !== 'Face' && l.Name !== 'Head'
         );
+
+        // Multiple persons detection (allow 1 for the test taker themselves)
+        const personLabels = filteredLabels.filter(l => 
+          l.Name === 'Person' || l.Name === 'Human'
+        );
+        const personCount = personLabels.reduce((maxCount, l) => {
+          return Math.max(maxCount, l.Instances?.length || 1);
+        }, 0);
+        const multiplePersonsDetected = personCount > 1;
 
         // Phone detection with stricter rules
         const phoneLabel = filteredLabels.find(l =>
@@ -82,7 +91,7 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         }, 0);
         const hasLaptopScreen = laptopLabels.length > 0;
 
-        const hasViolation = !!phoneLabel || laptopCount > 1;
+        const hasViolation = !!phoneLabel || laptopCount > 1 || multiplePersonsDetected;
 
         // Upload evidence: ALWAYS upload when a violation is detected, 
         // otherwise respect the periodic interval
@@ -112,12 +121,22 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
           });
         }
 
-        engine.addEvent({
-          type: 'MOBILE_FRAME',
-          timestamp: data.timestamp,
-          data: { hasLaptopScreen, laptopCount },
-          evidenceKey,
-        });
+        if (multiplePersonsDetected) {
+          // Send special event for multiple persons detected on mobile
+          engine.addEvent({
+            type: 'MOBILE_FRAME', // We can still use MOBILE_FRAME, we will pull personCount from data
+            timestamp: data.timestamp,
+            data: { hasLaptopScreen, laptopCount, personCount, multiplePersonsDetected: true },
+            evidenceKey,
+          });
+        } else {
+          engine.addEvent({
+            type: 'MOBILE_FRAME',
+            timestamp: data.timestamp,
+            data: { hasLaptopScreen, laptopCount, personCount, multiplePersonsDetected: false },
+            evidenceKey,
+          });
+        }
       }
     } catch (err) {
       logger.error('Error processing frame:', err);
