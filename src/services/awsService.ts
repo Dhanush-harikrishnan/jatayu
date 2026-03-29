@@ -1,7 +1,7 @@
 import { RekognitionClient, DetectFacesCommand, DetectLabelsCommand, CreateFaceLivenessSessionCommand, GetFaceLivenessSessionResultsCommand } from '@aws-sdk/client-rekognition';
 import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { DynamoDBClient, PutItemCommand, ListTablesCommand, GetItemCommand, UpdateItemCommand, QueryCommand, BatchWriteItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, PutItemCommand, ListTablesCommand, GetItemCommand, UpdateItemCommand, QueryCommand, BatchWriteItemCommand, ScanCommand } from '@aws-sdk/client-dynamodb';
 import { SESClient, SendEmailCommand, SendRawEmailCommand } from '@aws-sdk/client-ses';
 import { config } from '../config/env';
 import { logger } from '../logger';
@@ -367,89 +367,89 @@ export const awsService = {
 
   deleteSessionEvidence: async (sessionId: string): Promise<number> => {
     let totalDeleted = 0;
-    const prefixes = [`evidence/${sessionId}/primary/`, `evidence/${sessionId}/secondary/`, `exams/`];
+    // All evidence for a session lives under evidence/{sessionId}/
+    // This covers both primary/ and secondary/ subdirectories.
+    const prefix = `evidence/${sessionId}/`;
+    let continuationToken: string | undefined;
 
-    for (const prefix of prefixes) {
-      let continuationToken: string | undefined;
-      do {
-        const listCmd = new ListObjectsV2Command({
+    do {
+      const listCmd = new ListObjectsV2Command({
+        Bucket: config.aws.s3Bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+        MaxKeys: 1000,
+      });
+
+      const listRes = await s3Client.send(listCmd);
+      const objects = listRes.Contents || [];
+
+      if (objects.length > 0) {
+        const deleteCmd = new DeleteObjectsCommand({
           Bucket: config.aws.s3Bucket,
-          Prefix: prefix.startsWith('exams/') ? undefined : prefix,
-          ContinuationToken: continuationToken,
-          MaxKeys: 1000,
+          Delete: {
+            Objects: objects.map(obj => ({ Key: obj.Key! })),
+            Quiet: true,
+          },
         });
+        await s3Client.send(deleteCmd);
+        totalDeleted += objects.length;
+      }
 
-        // For the exams/ prefix, we need to filter by sessionId in the key
-        if (prefix === 'exams/') {
-          listCmd.input.Prefix = `exams/`;
-        }
-
-        const listRes = await s3Client.send(listCmd);
-        const objects = (listRes.Contents || []).filter(obj => {
-          if (prefix === 'exams/') {
-            return obj.Key?.includes(`/${sessionId}/`);
-          }
-          return true;
-        });
-
-        if (objects.length > 0) {
-          const deleteCmd = new DeleteObjectsCommand({
-            Bucket: config.aws.s3Bucket,
-            Delete: {
-              Objects: objects.map(obj => ({ Key: obj.Key! })),
-              Quiet: true,
-            },
-          });
-          await s3Client.send(deleteCmd);
-          totalDeleted += objects.length;
-        }
-
-        continuationToken = listRes.NextContinuationToken;
-      } while (continuationToken);
-    }
+      continuationToken = listRes.NextContinuationToken;
+    } while (continuationToken);
 
     logger.info(`[deleteSessionEvidence] Deleted ${totalDeleted} S3 objects for session ${sessionId}`);
     return totalDeleted;
   },
 
   deleteSessionViolations: async (sessionId: string): Promise<number> => {
-    // Query all items for this session
-    const queryCmd = new QueryCommand({
-      TableName: config.aws.dynamoDbTableName,
-      KeyConditionExpression: '#sid = :sid',
-      ExpressionAttributeNames: { '#sid': 'SessionId' },
-      ExpressionAttributeValues: { ':sid': { S: sessionId } },
-    });
-    const result = await dynamoClient.send(queryCmd);
-    const items = result.Items || [];
+    // The table's partition key is 'id' (a unique random string per event),
+    // NOT 'SessionId'. We must Scan with a filter to find matching items,
+    // then delete each by its actual primary key ('id').
+    let totalDeleted = 0;
+    let lastEvaluatedKey: Record<string, any> | undefined;
 
-    if (items.length === 0) return 0;
+    do {
+      const scanCmd: any = {
+        TableName: config.aws.dynamoDbTableName,
+        FilterExpression: 'SessionId = :sid',
+        ExpressionAttributeValues: { ':sid': { S: sessionId } },
+        ExclusiveStartKey: lastEvaluatedKey,
+      };
 
-    // BatchWriteItem can handle max 25 items per batch
-    const batches: any[][] = [];
-    for (let i = 0; i < items.length; i += 25) {
-      batches.push(items.slice(i, i + 25));
-    }
+      const result = await dynamoClient.send(new ScanCommand(scanCmd));
+      const items = result.Items || [];
+      lastEvaluatedKey = result.LastEvaluatedKey;
 
-    for (const batch of batches) {
-      const deleteRequests = batch.map((item: any) => ({
-        DeleteRequest: {
-          Key: {
-            SessionId: item.SessionId,
-            EventTime: item.EventTime,
+      if (items.length === 0) continue;
+
+      // BatchWriteItem can handle max 25 items per batch
+      for (let i = 0; i < items.length; i += 25) {
+        const batch = items.slice(i, i + 25);
+        const deleteRequests = batch.map((item: any) => ({
+          DeleteRequest: {
+            Key: {
+              id: item.id, // The actual partition key
+            },
           },
-        },
-      }));
+        }));
 
-      const batchCmd = new BatchWriteItemCommand({
-        RequestItems: {
-          [config.aws.dynamoDbTableName]: deleteRequests,
-        },
-      });
-      await dynamoClient.send(batchCmd);
-    }
+        const batchCmd = new BatchWriteItemCommand({
+          RequestItems: {
+            [config.aws.dynamoDbTableName]: deleteRequests,
+          },
+        });
 
-    logger.info(`[deleteSessionViolations] Deleted ${items.length} DynamoDB items for session ${sessionId}`);
-    return items.length;
+        try {
+          await dynamoClient.send(batchCmd);
+          totalDeleted += batch.length;
+        } catch (batchErr: any) {
+          logger.error(`[deleteSessionViolations] Batch delete failed:`, batchErr?.message);
+        }
+      }
+    } while (lastEvaluatedKey);
+
+    logger.info(`[deleteSessionViolations] Deleted ${totalDeleted} DynamoDB items for session ${sessionId}`);
+    return totalDeleted;
   },
 };
