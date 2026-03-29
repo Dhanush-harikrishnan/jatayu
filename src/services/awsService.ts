@@ -365,38 +365,46 @@ export const awsService = {
     }
   },
 
-  deleteSessionEvidence: async (sessionId: string): Promise<number> => {
+deleteSessionEvidence: async (sessionId: string, examId?: string): Promise<number> => {        
     let totalDeleted = 0;
-    // All evidence for a session lives under evidence/{sessionId}/
-    // This covers both primary/ and secondary/ subdirectories.
-    const prefix = `evidence/${sessionId}/`;
-    let continuationToken: string | undefined;
+    
+    // We wipe out TWO potential prefixes:
+    // 1) The standard evidence directory
+    // 2) The legacy / old exam route directory just to be absolutely sure
+    const prefixes = [
+      `evidence/${sessionId}/`,
+      examId ? `exams/${examId}/${sessionId}/` : undefined
+    ].filter(Boolean) as string[];
 
-    do {
-      const listCmd = new ListObjectsV2Command({
-        Bucket: config.aws.s3Bucket,
-        Prefix: prefix,
-        ContinuationToken: continuationToken,
-        MaxKeys: 1000,
-      });
+    for (const prefix of prefixes) {
+      let continuationToken: string | undefined;
 
-      const listRes = await s3Client.send(listCmd);
-      const objects = listRes.Contents || [];
-
-      if (objects.length > 0) {
-        const deleteCmd = new DeleteObjectsCommand({
+      do {
+        const listCmd = new ListObjectsV2Command({
           Bucket: config.aws.s3Bucket,
-          Delete: {
-            Objects: objects.map(obj => ({ Key: obj.Key! })),
-            Quiet: true,
-          },
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+          MaxKeys: 1000,
         });
-        await s3Client.send(deleteCmd);
-        totalDeleted += objects.length;
-      }
 
-      continuationToken = listRes.NextContinuationToken;
-    } while (continuationToken);
+        const listRes = await s3Client.send(listCmd);
+        const objects = listRes.Contents || [];
+
+        if (objects.length > 0) {
+          const deleteCmd = new DeleteObjectsCommand({
+            Bucket: config.aws.s3Bucket,
+            Delete: {
+              Objects: objects.map(obj => ({ Key: obj.Key! })),
+              Quiet: true,
+            },
+          });
+          await s3Client.send(deleteCmd);
+          totalDeleted += objects.length;
+        }
+
+        continuationToken = listRes.NextContinuationToken;
+      } while (continuationToken);
+    }
 
     logger.info(`[deleteSessionEvidence] Deleted ${totalDeleted} S3 objects for session ${sessionId}`);
     return totalDeleted;
