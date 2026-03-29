@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, AlertTriangle, User, Clock, Camera, Brain,
@@ -81,9 +81,14 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
     setShowTerminateConfirm(false);
   };
 
-  const rekogData = (selectedViolation?.metadata?.faceDetails?.length 
-    ? selectedViolation.metadata 
+  const rekogData = (selectedViolation?.metadata?.faceDetails?.length
+    ? selectedViolation.metadata
     : mockRekognitionData) as any;
+
+  // Find the latest mobile violation to display its image in the Mobile Camera section
+  const latestMobileViolation = violations.find(v => 
+    ['phone_detected', 'multiple_faces_mobile', 'multiple_laptops', 'gyro_movement'].includes(v.type)
+  );
 
   return (
     <AnimatePresence>
@@ -98,7 +103,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl bg-navy-900 border border-white/10 shadow-2xl"
+            className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-navy-900 border border-white/10 shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-navy-800/50">
@@ -127,7 +132,7 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                   <h2 className="font-sora text-lg font-semibold text-white">{student.studentName}</h2>
                   <div className="flex items-center gap-3 text-sm text-text-secondary">
                     <span>{student.studentId}</span>
-                    <span>•</span>
+                    <span>â€¢</span>
                     <span>{student.examTitle}</span>
                   </div>
                 </div>
@@ -204,66 +209,40 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           <span className="text-xs text-violation">LIVE</span>
                         </div>
                       </div>
-                      <div className="relative aspect-video bg-navy-800">
-                        {student.studentAvatar ? (
+                                            <div className="relative aspect-video bg-navy-800">
+                        {latestMobileViolation?.snapshotUrl ? (
                           <img
-                            src={student.studentAvatar}
-                            alt={student.studentName}
+                            src={latestMobileViolation.snapshotUrl}
+                            alt="Latest Mobile Frame"
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <User strokeWidth={1} className="h-16 w-16 text-white/20" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <Smartphone strokeWidth={1} className="h-12 w-12 text-white/20 mx-auto mb-2" />
+                              <p className="text-sm text-white/40">Mobile Camera</p>
+                              <p className="text-xs text-white/30 mt-1">Waiting for mobile feed...</p>
+                            </div>
                           </div>
                         )}
-                        
-                        {/* Face Detection Overlay */}
-                        <div className="absolute inset-0 pointer-events-none">
-                          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-40 border-2 border-cyan/50 rounded-lg">
-                            <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-cyan" />
-                            <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-cyan" />
-                            <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-cyan" />
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-cyan" />
-                          </div>
-                          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -mt-24">
-                            <span className="px-2 py-1 rounded bg-cyan/20 text-cyan text-xs font-mono">
-                              face: 98%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Mobile Feed */}
-                    <div className="glass-card overflow-hidden">
-                      <div className="flex items-center justify-between p-3 border-b border-white/10">
-                        <div className="flex items-center gap-2">
-                          <Smartphone strokeWidth={1} className="h-4 w-4 text-cyan" />
-                          <span className="text-sm font-medium text-white">Mobile Camera</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                          <span className="text-xs text-success">ACTIVE</span>
-                        </div>
-                      </div>
-                      <div className="relative aspect-video bg-navy-800">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <Smartphone strokeWidth={1} className="h-12 w-12 text-white/20 mx-auto mb-2" />
-                            <p className="text-sm text-white/40">Mobile Camera</p>
-                            <p className="text-xs text-white/30 mt-1">Rear Camera • Gyro Active</p>
-                          </div>
-                        </div>
-                        
                         {/* Room overlay markers */}
-                        <div className="absolute inset-4 pointer-events-none">
-                          <div className="absolute top-1/4 left-1/4 w-20 h-16 border border-cyan/30 rounded">
-                            <span className="absolute -top-5 left-0 text-xs text-cyan/60">desk</span>
+                        {latestMobileViolation ? (
+                          <div className="absolute inset-4 pointer-events-none">
+                            <div className="absolute top-2 right-2 px-2 py-1 bg-violation/80 text-white text-[10px] font-bold tracking-wider uppercase rounded shadow">
+                              Snapshot Captured
+                            </div>
                           </div>
-                          <div className="absolute top-1/3 right-1/4 w-16 h-12 border border-cyan/30 rounded">
-                            <span className="absolute -top-5 left-0 text-xs text-cyan/60">laptop</span>
+                        ) : (
+                          <div className="absolute inset-4 pointer-events-none">
+                            <div className="absolute top-1/4 left-1/4 w-20 h-16 border border-cyan/30 rounded">
+                              <span className="absolute -top-5 left-0 text-xs text-cyan/60">desk</span>
+                            </div>
+                            <div className="absolute top-1/3 right-1/4 w-16 h-12 border border-cyan/30 rounded">
+                              <span className="absolute -top-5 left-0 text-xs text-cyan/60">laptop</span>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -519,11 +498,11 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
                           <div className="mt-2 grid grid-cols-2 gap-2">
                             <div className="p-2 rounded bg-white/5">
                               <span className="text-xs text-text-secondary">Yaw</span>
-                              <p className="text-sm text-white">{rekogData.faceDetails[0].eyeGaze.yaw}°</p>
+                              <p className="text-sm text-white">{rekogData.faceDetails[0].eyeGaze.yaw}Â°</p>
                             </div>
                             <div className="p-2 rounded bg-white/5">
                               <span className="text-xs text-text-secondary">Pitch</span>
-                              <p className="text-sm text-white">{rekogData.faceDetails[0].eyeGaze.pitch}°</p>
+                              <p className="text-sm text-white">{rekogData.faceDetails[0].eyeGaze.pitch}Â°</p>
                             </div>
                           </div>
                         </div>
@@ -726,3 +705,4 @@ function DetailRow({ label, value }: DetailRowProps) {
     </div>
   );
 }
+

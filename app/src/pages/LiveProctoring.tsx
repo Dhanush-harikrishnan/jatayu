@@ -151,6 +151,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
     socket.on('mobile_violation', (data: { violationType: string; timestamp: string; s3Key?: string }) => {
       const mobileDescriptions: Record<string, string> = {
         'PHONE_DETECTED': 'Phone detected by secondary camera',
+        'BOOK_DETECTED': 'Book or document detected by secondary camera',
         'MULTIPLE_LAPTOPS_DETECTED': 'Multiple laptops detected by secondary camera',
         'PHONE_MOVEMENT_DETECTED': 'Significant phone movement detected',
         'MULTIPLE_PERSONS_DETECTED_MOBILE': 'Multiple persons detected by secondary camera',
@@ -159,7 +160,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
       const newViolation: Violation = {
         id: `mobile_${Date.now()}`,
         type: data.violationType,
-        severity: data.violationType === 'PHONE_DETECTED' ? 'high' : 'medium',
+        severity: (data.violationType === 'PHONE_DETECTED' || data.violationType === 'BOOK_DETECTED') ? 'high' : 'medium',
         timestamp: data.timestamp,
         evidenceKey: data.s3Key,
       };
