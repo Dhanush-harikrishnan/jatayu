@@ -267,6 +267,12 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
   useEffect(() => {
     // Reset overlay state when leaving setup preview.
     if (currentStep !== 2) setSetupFaceCheck('idle');
+    // Reset liveness state when leaving the liveness step so a fresh
+    // session is always created if the user comes back.
+    if (currentStep !== 3) {
+      setLivenessSessionId(null);
+      setLivenessError(null);
+    }
   }, [currentStep]);
 
   const requestScreenShare = async () => {
@@ -315,7 +321,8 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
       }
     } catch (error) {
       console.error('Failed to get liveness result', error);
-      alert('Failed to analyze liveness results from AWS.');
+      setLivenessError('Liveness verification failed. Please retry.');
+      setLivenessSessionId(null); // Allow retry with fresh session
     }
   };
 
@@ -853,6 +860,7 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                           const msg = (e as any)?.message || 'Face liveness stream failed';
                           console.error('Liveness detector error:', e);
                           setLivenessError(msg);
+                          setLivenessSessionId(null); // Reset so a fresh session can be created on retry
                         }}
                         disableStartScreen={true}
                       />
@@ -872,11 +880,22 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
                   {!livenessPassed && livenessError && (
                     <div className="mt-4 rounded-lg border border-violation/30 bg-violation/10 p-3 text-navy-900 w-full max-w-xl">
                       <p className="text-sm font-medium">Liveness error: {livenessError}</p>
-                      <p className="text-xs mt-1">If this is local testing, use the dev bypass below.</p>
+                      <p className="text-xs mt-1">Click retry to create a new liveness session.</p>
+                      <button
+                        onClick={() => {
+                          setLivenessError(null);
+                          setLivenessSessionId(null);
+                          // The useEffect watching livenessSessionId === null
+                          // on step 3 will auto-create a new session.
+                        }}
+                        className="mt-2 px-3 py-1.5 rounded bg-cyan text-navy-900 text-sm font-semibold"
+                      >
+                        Retry Liveness Check
+                      </button>
                       {(import.meta.env.DEV || import.meta.env.VITE_ALLOW_LIVENESS_BYPASS === 'true') && (
                         <button
                           onClick={() => setLivenessPassed(true)}
-                          className="mt-2 px-3 py-1.5 rounded bg-cyan text-navy-900 text-sm font-semibold"
+                          className="mt-2 ml-2 px-3 py-1.5 rounded bg-warning/20 text-navy-900 text-sm font-semibold"
                         >
                           Dev Bypass Liveness
                         </button>

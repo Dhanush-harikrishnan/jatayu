@@ -552,8 +552,8 @@ export const terminateSession = async (req: Request, res: Response, next: NextFu
       console.error(`[terminateSession] Engine removal failed: ${err?.message}`);
     }
 
-    // 5. Update session registry
-    sessionRegistry.touch(sessionId, 'offline');
+    // 5. Fully remove from session registry so it doesn't reappear on dashboard poll
+    sessionRegistry.remove(sessionId);
 
     res.json({
       success: true,

@@ -53,8 +53,9 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
           evidenceKey,
         });
       } else if (role === 'secondary_camera') {
-        // Emit mobile feed to the primary camera in the same session room
-        socket.to(roomName).emit('mobile_feed_frame', { imageBase64: data.imageBase64 });
+        // The visual_frame handler (defined below) handles live preview
+        // streaming to the desktop. This 'frame' handler only runs AI
+        // analysis at 5s intervals.
 
         // Mobile camera -> Detect Labels
         const res = await awsService.detectLabels(buffer);
@@ -144,6 +145,17 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
       timestamp: data.timestamp,
       data: { text: data.text }
     });
+  });
+
+  // Lightweight visual-only frame relay (no AI analysis).
+  // The mobile camera sends these at ~500ms intervals purely for the
+  // desktop PiP preview so the secondary feed looks like live video
+  // rather than choppy frame-by-frame updates.
+  socket.on('visual_frame', (data: { imageBase64: string }) => {
+    const { role } = socket.data.user;
+    if (role === 'secondary_camera') {
+      socket.to(roomName).emit('mobile_feed_frame', { imageBase64: data.imageBase64 });
+    }
   });
 
   // Gyro / Static Anchor ingestion

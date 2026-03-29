@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils';
 import { io as socketIO, Socket } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const SNAPSHOT_INTERVAL_MS = 5000; // Send a frame every 5 seconds
+const SNAPSHOT_INTERVAL_MS = 5000; // Send a frame every 5 seconds for AI analysis
+const VISUAL_FRAME_INTERVAL_MS = 500; // Send a lightweight frame every 500ms for live video preview
 
 interface MobileCameraProps {
   pairingCode?: string;
@@ -29,7 +30,9 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
   const streamRef = useRef<MediaStream | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const snapshotIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const visualFrameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const visualCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const connectedAtRef = useRef<number>(0);
   const examStartedByLaptopRef = useRef<boolean>(false);
 
@@ -92,6 +95,10 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       clearInterval(snapshotIntervalRef.current);
       snapshotIntervalRef.current = null;
     }
+    if (visualFrameIntervalRef.current) {
+      clearInterval(visualFrameIntervalRef.current);
+      visualFrameIntervalRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -151,6 +158,7 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
   const startSnapshotLoop = useCallback(() => {
     if (snapshotIntervalRef.current) return;
 
+    // AI analysis frames (every 5s) — sent to backend for AWS Rekognition
     snapshotIntervalRef.current = setInterval(() => {
       const frame = captureFrame();
       if (frame && socketRef.current?.connected) {
@@ -161,6 +169,28 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
         setSnapshotCount(prev => prev + 1);
       }
     }, SNAPSHOT_INTERVAL_MS);
+
+    // Visual-only frames (every 500ms) — relayed directly to desktop for
+    // smooth live video preview. Uses lower quality to save bandwidth.
+    if (!visualFrameIntervalRef.current) {
+      visualFrameIntervalRef.current = setInterval(() => {
+        const video = videoRef.current;
+        if (!video || video.readyState < 2) return;
+        if (!socketRef.current?.connected) return;
+
+        if (!visualCanvasRef.current) {
+          visualCanvasRef.current = document.createElement('canvas');
+        }
+        const canvas = visualCanvasRef.current;
+        canvas.width = video.videoWidth ? Math.min(video.videoWidth, 320) : 320;
+        canvas.height = video.videoHeight ? Math.min(video.videoHeight, 240) : 240;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const visualFrame = canvas.toDataURL('image/jpeg', 0.4);
+        socketRef.current.emit('visual_frame', { imageBase64: visualFrame });
+      }, VISUAL_FRAME_INTERVAL_MS);
+    }
   }, [captureFrame]);
 
   // Handle the automatic snapshot loop only when natively in capturing mode
@@ -171,6 +201,10 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
       if (snapshotIntervalRef.current) {
         clearInterval(snapshotIntervalRef.current);
         snapshotIntervalRef.current = null;
+      }
+      if (visualFrameIntervalRef.current) {
+        clearInterval(visualFrameIntervalRef.current);
+        visualFrameIntervalRef.current = null;
       }
     }
   }, [connectionState, startSnapshotLoop]);
@@ -397,9 +431,9 @@ export function MobileCamera({ pairingCode, pairingToken }: MobileCameraProps) {
           autoPlay
           playsInline
           muted
-          className="absolute inset-0 h-full w-full object-cover opacity-50"
+          className="absolute inset-0 h-full w-full object-cover opacity-80"
         />
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/20" />
         
         <div className="relative z-10 flex flex-col items-center justify-center p-6 min-h-screen pt-24 pb-20">
           <div className="w-full max-w-sm rounded-3xl bg-navy-900/90 backdrop-blur-md border border-white/10 p-6 flex flex-col text-center shadow-2xl">

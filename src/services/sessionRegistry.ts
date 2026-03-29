@@ -57,6 +57,10 @@ export const sessionRegistry = {
     });
   },
 
+  remove(sessionId: string) {
+    sessions.delete(sessionId);
+  },
+
   list(): SessionRecord[] {
     return Array.from(sessions.values());
   },
