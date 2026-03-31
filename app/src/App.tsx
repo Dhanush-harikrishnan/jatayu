@@ -583,7 +583,7 @@ function LandingPage({ navigate }: { navigate: (path: string) => void }) {
             
             <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/5">
               <p className="text-sm text-text-secondary">
-                © 2024 SecureGuard Pro. All rights reserved.
+                Â© 2024 SecureGuard Pro. A collaborative effort by the team. All rights reserved.
               </p>
               <div className="flex items-center gap-6 mt-4 md:mt-0">
                 <a href="#" className="text-sm text-text-secondary hover:text-white transition-colors">Privacy</a>
