@@ -45,3 +45,7 @@ px tsc --noEmit\ for type check validation from the project root crashed due to 
 11. **Form Validation & Smart Defaults:**
    - *Issue*: QuestionEditor.tsx and CreateExamModal.tsx lacked appropriate defaults and structural validations, allowing the creation of questions without text, mismatched test cases, and poor syntax mismatches (e.g. unction in python).
    - *Resolution*: Implemented dynamic starter code, conditional point constraints based on question type, and submit-time validation on the frontend ensuring robust payload before hitting the backend endpoint.
+
+12. **Missing Backend Validation Handlers:**
+   - *Issue*: dashboardController.ts, questionController.ts, and wsService.ts lacked strict type and missing argument validations, which allowed malformed payloads onto DynamoDB through edge-case HTTP requests.
+   - *Resolution*: Implemented ISO date validators, 	otalQuestions sign guards, examId assertion guard clauses in AWS Service, and mapped validation aggregations into .batchCreateQuestions() returning 400 with a detailed mapped arrays of all errors per question when malformed questions are shipped over.

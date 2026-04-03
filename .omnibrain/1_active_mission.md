@@ -77,20 +77,20 @@
 - Points must be 1-100 per question
 - Show inline per-question error badges with clear messages
 
-### Phase C: Backend Hardening (Steps 8-10)
+### Phase C: Backend Hardening (Steps 8-10) - ✅ COMPLETED
 
-Step 8: dashboardController.ts - Server-side validation
+✅ Step 8: dashboardController.ts - Server-side validation
 - Validate sections array structure if provided
 - Validate startTime is a parseable ISO string
 - Auto-compute endTime if missing
 - Reject if totalQuestions is negative
 
-Step 9: questionController.ts - Validate batch questions
+✅ Step 9: questionController.ts - Validate batch questions
 - Each question needs examId, sectionType, non-empty text
 - Coding questions need codingConfig with language and at least 1 testCase
 - Return per-question errors in response body
 
-Step 10: awsService.ts - Guard createExam
+✅ Step 10: awsService.ts - Guard createExam
 - Throw early if examId is falsy
 - Ensure enabledStatus stringification is consistent
 

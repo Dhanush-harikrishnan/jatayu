@@ -63,6 +63,10 @@ export const awsService = {
 
   createExam: async (examData: any) => {
     try {
+      if (!examData.examId) {
+        throw new Error('examId is required for creating an exam');
+      }
+      
       const timestamp = new Date().toISOString();
       const enabledStatus = String(examData.enabled !== undefined ? examData.enabled : true);
       const item = {

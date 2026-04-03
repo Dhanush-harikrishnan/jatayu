@@ -447,7 +447,7 @@ export const getStudentExams = async (req: Request, res: Response, next: NextFun
 export const createCustomExam = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payloadId = req.body.id || req.body.examId;
-    const { title, description, duration, totalQuestions, instructions, requireFullscreen } = req.body;
+    const { title, description, duration, totalQuestions, instructions, requireFullscreen, sections } = req.body;
 
     if (!payloadId || !title || !duration) {
       return res.status(400).json({ success: false, message: 'ID (or examId), title, and duration are required' });
@@ -455,12 +455,35 @@ export const createCustomExam = async (req: Request, res: Response, next: NextFu
 
     const safeDuration = Math.max(10, Math.min(480, Number(duration)));
 
-    const startTime = req.body.startTime || new Date().toISOString();
+    // Step 8: Validate startTime parseability
+    const startTimeStr = req.body.startTime || new Date().toISOString();
+    const startParse = Date.parse(startTimeStr);
+    if (isNaN(startParse)) {
+      return res.status(400).json({ success: false, message: 'Invalid startTime format. Must be an ISO string' });
+    }
+    const startTimeObj = new Date(startParse);
+    const startTime = startTimeObj.toISOString();
+
     let endTime = req.body.endTime;
     if (!endTime) {
-      const d = new Date(startTime);
+      const d = new Date(startTimeObj);
       d.setMinutes(d.getMinutes() + safeDuration);
       endTime = d.toISOString();
+    } else {
+      if (isNaN(Date.parse(endTime))) {
+        return res.status(400).json({ success: false, message: 'Invalid endTime format. Must be an ISO string' });
+      }
+    }
+
+    // Step 8: Reject negative totalQuestions
+    const totalQ = Number(totalQuestions) || 10;
+    if (totalQ < 0) {
+      return res.status(400).json({ success: false, message: 'totalQuestions cannot be negative' });
+    }
+
+    // Step 8: Validate sections array structure
+    if (sections && !Array.isArray(sections)) {
+      return res.status(400).json({ success: false, message: 'Sections must be an array' });
     }
 
     const existingId = await awsService.getExam(payloadId);
@@ -473,13 +496,13 @@ export const createCustomExam = async (req: Request, res: Response, next: NextFu
       title,
       description: description || '',
       duration: safeDuration,
-      totalQuestions: Number(totalQuestions) || 10,
+      totalQuestions: totalQ,
       instructions: Array.isArray(instructions) ? instructions : (instructions ? [instructions] : []),
       startTime,
       endTime,
       enabled: req.body.enabled !== false,
       requireFullscreen: requireFullscreen !== false,
-      sections: req.body.sections || []
+      sections: sections || []
     };
 
     const savedExam = await awsService.createExam(newConfig);

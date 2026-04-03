@@ -20,6 +20,29 @@ export const batchCreateQuestions = async (req: Request, res: Response) => {
     const { questions } = req.body;
     if (!Array.isArray(questions)) return res.status(400).json({ error: 'Questions must be an array' });
 
+    // Step 9: Validate batch questions
+    const errors: string[] = [];
+    questions.forEach((q, index) => {
+      if (!q.examId) errors.push(`Question ${index}: Missing examId`);
+      if (!q.sectionType) errors.push(`Question ${index}: Missing sectionType`);
+      if (!q.text || typeof q.text !== 'string' || !q.text.trim()) errors.push(`Question ${index}: Missing or empty text`);
+      
+      if (q.sectionType === 'CODING') {
+        if (!q.codingConfig) {
+          errors.push(`Question ${index}: Coding questions must include codingConfig`);
+        } else {
+          if (!q.codingConfig.language) errors.push(`Question ${index}: Coding config must specify a language`);
+          if (!Array.isArray(q.codingConfig.testCases) || q.codingConfig.testCases.length === 0) {
+            errors.push(`Question ${index}: Coding config must have at least 1 testCase`);
+          }
+        }
+      }
+    });
+
+    if (errors.length > 0) {
+      return res.status(400).json({ error: 'Validation failed', details: errors });
+    }
+
     const questionsWithIds = questions.map(q => ({
       questionId: uuidv4(),
       ...q
