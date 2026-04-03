@@ -94,14 +94,14 @@
 - Throw early if examId is falsy
 - Ensure enabledStatus stringification is consistent
 
-### Phase D: Student Experience Polish (Steps 11-12)
+### Phase D: Student Experience Polish (Steps 11-12) - ✅ COMPLETED
 
-Step 11: LiveProctoring.tsx - Render by section type
+✅ Step 11: LiveProctoring.tsx - Render by section type
 - After loading questions from API, group into sections
 - MCQ/Aptitude/Logical render with radio buttons
 - Coding renders with textarea code editor
 - Section tabs/navigation sidebar
 
-Step 12: StudentDashboard.tsx - Show section breakdown on exam cards
+✅ Step 12: StudentDashboard.tsx - Show section breakdown on exam cards
 - Display section badges: MCQ: 20, Coding: 5, etc.
 - Show difficulty distribution if available

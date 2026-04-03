@@ -49,3 +49,8 @@ px tsc --noEmit\ for type check validation from the project root crashed due to 
 12. **Missing Backend Validation Handlers:**
    - *Issue*: dashboardController.ts, questionController.ts, and wsService.ts lacked strict type and missing argument validations, which allowed malformed payloads onto DynamoDB through edge-case HTTP requests.
    - *Resolution*: Implemented ISO date validators, 	otalQuestions sign guards, examId assertion guard clauses in AWS Service, and mapped validation aggregations into .batchCreateQuestions() returning 400 with a detailed mapped arrays of all errors per question when malformed questions are shipped over.
+
+13. **Missing Section Summary in Dashboards:**
+   - *Issue*: StudentDashboard showed total questions but lacked critical breakdown contexts on upcoming and active exams, leaving students blind. LiveProctoring.tsx layout and grouping logic was partially built but lacked mapping parity with S3 schemas.
+   - *Resolution*: Injected sections mapping into Exam typing across index.ts and dashboardController.ts. Extracted payload configurations mapped the response natively into dashboard badges.
+

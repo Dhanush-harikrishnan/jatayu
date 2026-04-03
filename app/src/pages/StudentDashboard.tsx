@@ -331,6 +331,17 @@ function ExamCard({ exam, statusBadge }: ExamCardProps) {
               <span>{formatDateTime(exam.startTime)}</span>
             </div>
           </div>
+          
+          {/* Step 12: Extra sections breakdown if available */}
+          {exam.sections && exam.sections.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {exam.sections.map((sec, idx) => (
+                <span key={idx} className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
+                  {sec.sectionType}: {sec.count}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

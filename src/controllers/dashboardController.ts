@@ -437,6 +437,7 @@ export const getStudentExams = async (req: Request, res: Response, next: NextFun
       instructions: exam.instructions || [],
       enabled: exam.enabled,
       requireFullscreen: exam.requireFullscreen,
+      sections: exam.sections || [],
     }));
     res.json({ success: true, data: exams });
   } catch (error) {

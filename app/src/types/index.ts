@@ -33,6 +33,7 @@ export interface Exam {
   passingScore: number;
   instructions: string[];
   allowedAttempts: number;
+  sections?: { sectionType: string; count: number }[];
 }
 
 export interface ExamSession {
