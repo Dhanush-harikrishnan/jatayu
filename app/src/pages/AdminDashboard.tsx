@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Search, Grid3X3, LayoutList, 
@@ -9,6 +9,7 @@ import { cn, getRelativeTime } from '@/lib/utils';
 import type { StudentCard, Violation } from '@/types';
 import { ViolationModal } from '@/components/modals/ViolationModal';
 import { CreateExamModal } from '@/components/modals/CreateExamModal';
+import { RiskHeatmap } from '@/components/RiskHeatmap';
 import { fetchApi } from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import { X } from 'lucide-react';
@@ -33,7 +34,7 @@ export function AdminDashboard() {
   const [violations, setViolations] = useState<Violation[]>(mockViolations);
   const [examConfigs, setExamConfigs] = useState<AdminExamConfig[]>([]);
   const [selectedExamId, setSelectedExamId] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'heatmap'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedStudent, setSelectedStudent] = useState<StudentCard | null>(null);
@@ -426,7 +427,12 @@ export function AdminDashboard() {
             )}
           </section>
 
-          {viewMode === 'grid' ? (
+          {viewMode === 'heatmap' ? (
+            <RiskHeatmap 
+              students={filteredStudents} 
+              onStudentClick={handleStudentClick} 
+            />
+          ) : viewMode === 'grid' ? (
             <div
               className="grid gap-1"
               style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(250px, 1fr))` }}
@@ -915,3 +921,7 @@ function StudentListRow({ student, onClick }: StudentListRowProps) {
     </motion.div>
   );
 }
+
+
+
+

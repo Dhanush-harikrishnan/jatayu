@@ -158,6 +158,8 @@ export interface StudentCard {
   lastActivity: Date;
   trustScore?: number;
     aiSummary?: string;
+}
+
 export interface WebSocketMessage {
   type: 'telemetry' | 'violation' | 'status_change' | 'heartbeat' | 'command' | 'error';
   payload: any;
