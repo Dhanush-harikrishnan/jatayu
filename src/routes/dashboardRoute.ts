@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import {
 	getAdminStudents,
 	getAdminViolations,
@@ -10,6 +10,7 @@ import {
 	terminateSession,
 	getViolationsBySession,
 } from '../controllers/dashboardController';
+import { getAnalytics } from '../controllers/analyticsController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -19,6 +20,7 @@ router.use(authenticate);
 
 router.get('/admin/students', requireRole(['admin']), getAdminStudents);
 router.get('/admin/violations', requireRole(['admin']), getAdminViolations);
+router.get('/admin/analytics', requireRole(['admin']), getAnalytics);
 router.get('/violations/:sessionId', getViolationsBySession);
 router.get('/admin/exams', requireRole(['admin']), getAdminExams);
 router.post('/admin/exams', requireRole(['admin']), createCustomExam);
@@ -28,3 +30,5 @@ router.delete('/admin/sessions/:sessionId', requireRole(['admin']), terminateSes
 router.get('/student/exams', getStudentExams);
 
 export const dashboardRoutes = router;
+
+

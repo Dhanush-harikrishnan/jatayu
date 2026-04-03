@@ -13,6 +13,7 @@ import { LiveProctoring } from '@/pages/LiveProctoring';
 import { MobileCamera } from '@/pages/MobileCamera';
 import { AdminLogin } from '@/pages/AdminLogin';
 import { AdminDashboard } from '@/pages/AdminDashboard';
+import { AdminAnalytics } from '@/pages/AdminAnalytics';
 import { ExamReport } from '@/pages/ExamReport';
 
 // Simple router based on URL path
@@ -65,6 +66,7 @@ function App() {
     // Admin routes
     if (path === '/admin/login') return <AdminLogin />;
     if (path === '/admin/dashboard') return <AdminDashboard />;
+    if (path === '/admin/analytics') return <AdminAnalytics />;
     
     // Default: Landing page
     return <LandingPage navigate={navigate} />;
