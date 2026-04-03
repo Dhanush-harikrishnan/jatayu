@@ -61,10 +61,18 @@ export function AdminDashboard() {
       }));
     };
 
+    const handleTrustScoreUpdate = (data: { sessionId: string; score: number }) => {
+      setStudents(prev => prev.map(s => 
+        s.sessionId === data.sessionId ? { ...s, trustScore: data.score } : s
+      ));
+    };
+
     socket.on('admin_mobile_feed_frame', handleFrame);
+    socket.on('trust_score_update', handleTrustScoreUpdate);
     
     return () => {
       socket.off('admin_mobile_feed_frame', handleFrame);
+      socket.off('trust_score_update', handleTrustScoreUpdate);
     };
   }, [socket]);
 
@@ -782,8 +790,22 @@ function StudentGridCard({ student, onClick }: StudentGridCardProps) {
 
       {/* Info */}
       <div className="p-3">
-        <h4 className="font-medium text-white truncate">{student.studentName}</h4>
-        <p className="text-xs text-text-secondary">{student.studentId}</p>
+        <div className="flex justify-between items-start">
+          <div className="min-w-0 flex-1">
+            <h4 className="font-medium text-white truncate">{student.studentName}</h4>
+            <p className="text-xs text-text-secondary truncate">{student.studentId}</p>
+          </div>
+          <div className="flex flex-col items-end shrink-0 ml-2">
+            <span className={cn(
+              "text-sm font-bold leading-none",
+              (student.trustScore ?? 100) >= 80 ? "text-emerald-400" :
+              (student.trustScore ?? 100) >= 50 ? "text-warning" : "text-violation"
+            )}>
+              {Math.round(student.trustScore ?? 100)}%
+            </span>
+            <span className="text-[9px] text-text-secondary uppercase tracking-wider mt-0.5">Trust</span>
+          </div>
+        </div>
         <div className="flex items-center justify-between mt-2 text-xs text-text-secondary">
           <span>{getRelativeTime(student.joinTime)}</span>
           <span className="flex items-center gap-1">
@@ -836,13 +858,21 @@ function StudentListRow({ student, onClick }: StudentListRowProps) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h4 className="font-medium text-white">{student.studentName}</h4>
+          <h4 className="font-medium text-white truncate">{student.studentName}</h4>
           {student.violationCount > 0 && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-violation/20 text-violation text-xs">
               <AlertTriangle strokeWidth={1} className="h-3 w-3" />
               {student.violationCount}
             </span>
           )}
+          <span className={cn(
+            "px-1.5 py-0.5 rounded text-[10px] font-medium border uppercase tracking-wide",
+            (student.trustScore ?? 100) >= 80 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+            (student.trustScore ?? 100) >= 50 ? "bg-warning/10 text-warning border-warning/20" : 
+            "bg-violation/10 text-violation border-violation/20"
+          )}>
+            Trust: {Math.round(student.trustScore ?? 100)}%
+          </span>
         </div>
         <p className="text-sm text-text-secondary">{student.studentId}</p>
       </div>

@@ -9,6 +9,8 @@ import {
 import { cn, getViolationDescription } from '@/lib/utils';
 import { fetchApi, API_BASE_URL } from '@/lib/api';
 import { io as socketIO, Socket } from 'socket.io-client';
+import { AntiCheatEngine, type AntiCheatViolation } from '@/lib/antiCheat';
+import { VoiceDetector } from '@/lib/voiceDetector';
 
 interface LiveProctoringProps {
   examId?: string;
@@ -219,10 +221,57 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
     document.addEventListener('copy', blockCopyPaste);
     document.addEventListener('paste', blockCopyPaste);
 
+    // Initialize Anti-Cheat Engine (Sprint 1 Step 3)
+    const antiCheat = new AntiCheatEngine((type: AntiCheatViolation, details: string) => {
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('anti_cheat', { type, details, timestamp: Date.now() });
+      }
+      setRealViolations(prev => [{
+        id: `${type}_${Date.now()}`,
+        type,
+        severity: 'high',
+        timestamp: new Date().toISOString(),
+      } as Violation, ...prev].slice(0, 10));
+
+      addToast({
+        id: `${type}_${Date.now()}`,
+        type: 'error',
+        title: 'Security Violation',
+        message: details,
+      });
+    });
+    antiCheat.start();
+
+    // Initialize Voice Detector (Sprint 1 Step 4)
+    const voiceDetector = new VoiceDetector((volume: number) => {
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('voice_detected', { volume, timestamp: Date.now() });
+      }
+      setRealViolations(prev => [{
+        id: `voice_${Date.now()}`,
+        type: 'voice_detected',
+        severity: 'medium',
+        timestamp: new Date().toISOString(),
+      } as Violation, ...prev].slice(0, 10));
+
+      addToast({
+        id: `voice_${Date.now()}`,
+        type: 'warning',
+        title: 'Voice Detected',
+        message: 'Sustained audio activity detected in your environment.',
+      });
+    });
+    // Start voice detector after a short delay to allow user to be ready
+    setTimeout(() => {
+      voiceDetector.start();
+    }, 2000);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('copy', blockCopyPaste);
       document.removeEventListener('paste', blockCopyPaste);
+      antiCheat.stop();
+      voiceDetector.stop();
     };
   }, [addToast]);
 

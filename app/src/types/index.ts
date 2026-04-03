@@ -156,6 +156,7 @@ export interface StudentCard {
   violationCount: number;
   thumbnailUrl?: string;
   lastActivity: Date;
+  trustScore?: number;
 }
 
 // WebSocket Types
