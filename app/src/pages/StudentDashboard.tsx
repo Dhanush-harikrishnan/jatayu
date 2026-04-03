@@ -43,6 +43,21 @@ export function StudentDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('Student');
+  const [userId, setUserId] = useState<string>('STU-2024-001');
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.name) setUserName(payload.name);
+        if (payload.userId) setUserId(payload.userId);
+      }
+    } catch (e) {
+      console.error('Failed to parse user token', e);
+    }
+  }, []);
 
   const loadExams = () => {
     setLoading(true);
@@ -116,8 +131,8 @@ export function StudentDashboard() {
 
           <div className="flex items-center gap-4">
             <div className="hidden text-right md:block">
-              <p className="text-sm font-medium text-slate-900">John Doe</p>
-              <p className="text-xs text-slate-500">Student ID: STU-2024-001</p>
+                <p className="text-sm font-medium text-slate-900">{userName}</p>
+                <p className="text-xs text-slate-500">Student ID: {userId}</p>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100/50">
               <User strokeWidth={1} className="h-5 w-5 text-blue-600" />
@@ -144,7 +159,7 @@ export function StudentDashboard() {
           <motion.div variants={itemVariants} className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="font-sora text-3xl font-bold text-slate-900">
-                Welcome back, John!
+                Welcome back, {userName.split(' ')[0]}!
               </h2>
               <p className="mt-1 text-slate-500">
                 You have {activeExams.length} active and {upcomingExams.length} upcoming exams
