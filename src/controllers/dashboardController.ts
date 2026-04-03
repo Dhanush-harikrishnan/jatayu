@@ -23,7 +23,7 @@ export function resolveExamStatus(exam: any): 'upcoming' | 'active' | 'completed
 
   if (!exam.enabled) return 'upcoming';
 
-  const endMs = startMs + exam.duration * 60 * 1000;
+  const endMs = exam.endTime ? new Date(exam.endTime).getTime() : startMs + exam.duration * 60 * 1000;
   if (now < startMs) return 'upcoming';
   if (now >= startMs && now <= endMs) return 'active';
   return 'completed';
