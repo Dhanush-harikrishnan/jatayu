@@ -16,108 +16,7 @@ type ExamConfig = {
   requireFullscreen: boolean;
 };
 
-const examConfigs = new Map<string, ExamConfig>([
-  [
-    'EXAM-101',
-    {
-      id: 'EXAM-101',
-      title: 'Introduction to Computer Science',
-      description: 'Covers basic algorithms, data structures, and software engineering principles.',
-      totalQuestions: 50,
-      instructions: ['Ensure your webcam is on', 'Close all other applications', 'No bathroom breaks allowed'],
-      duration: 120,
-      startTime: new Date().toISOString(),
-      enabled: true,
-      requireFullscreen: true,
-    },
-  ],
-  [
-    'EXAM-102',
-    {
-      id: 'EXAM-102',
-      title: 'Advanced Mathematics',
-      description: 'Calculus, linear algebra, and discrete mathematics.',
-      totalQuestions: 40,
-      instructions: [],
-      duration: 180,
-      startTime: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(),
-      enabled: false,
-      requireFullscreen: true,
-    },
-  ],
-  [
-    'PRACTICE-001',
-    {
-      id: 'PRACTICE-001',
-      title: 'Practice: Networking Basics',
-      description: 'Test your knowledge of fundamental networking concepts, protocols, and architecture.',
-      totalQuestions: 5,
-      instructions: ['This is a practice test — no proctoring violations will count', 'Take your time to review each question'],
-      duration: 15,
-      startTime: new Date().toISOString(),
-      enabled: true,
-      requireFullscreen: false,
-    },
-  ],
-  [
-    'PRACTICE-002',
-    {
-      id: 'PRACTICE-002',
-      title: 'Practice: Operating Systems',
-      description: 'Memory management, process scheduling, file systems and OS fundamentals.',
-      totalQuestions: 5,
-      instructions: ['Practice exam — all features are unlocked', 'Answers are not graded'],
-      duration: 15,
-      startTime: new Date().toISOString(),
-      enabled: true,
-      requireFullscreen: false,
-    },
-  ],
-  [
-    'PRACTICE-003',
-    {
-      id: 'PRACTICE-003',
-      title: 'Practice: Database Design',
-      description: 'SQL, relational models, normalization and database query optimization.',
-      totalQuestions: 5,
-      instructions: ['Practice exam', 'Use it to prepare for the main assessments'],
-      duration: 15,
-      startTime: new Date().toISOString(),
-      enabled: true,
-      requireFullscreen: false,
-    },
-  ],
-  [
-    'PRACTICE-004',
-    {
-      id: 'PRACTICE-004',
-      title: 'Practice: Python Programming',
-      description: 'Core Python syntax, data types, functions, and basic OOP concepts.',
-      totalQuestions: 5,
-      instructions: ['Practice exam', 'No live proctoring is applied for practice tests'],
-      duration: 15,
-      startTime: new Date().toISOString(),
-      enabled: true,
-      requireFullscreen: false,
-    },
-  ],
-  [
-    'PRACTICE-005',
-    {
-      id: 'PRACTICE-005',
-      title: 'Practice: Cloud Computing',
-      description: 'AWS, GCP, Azure services, cloud architecture, and deployment patterns.',
-      totalQuestions: 5,
-      instructions: ['Practice exam', 'Covers key cloud certification topics'],
-      duration: 15,
-      startTime: new Date().toISOString(),
-      enabled: true,
-      requireFullscreen: false,
-    },
-  ],
-]);
-
-function resolveExamStatus(exam: ExamConfig): 'upcoming' | 'active' | 'completed' {
+export function resolveExamStatus(exam: any): 'upcoming' | 'active' | 'completed' {
   const now = Date.now();
   const startMs = new Date(exam.startTime).getTime();
   if (!Number.isFinite(startMs)) return 'upcoming';
@@ -203,6 +102,38 @@ function descriptionForType(type: string): string {
       return `Suspicious activity detected (${type})`;
   }
 }
+
+export const getViolationsBySession = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sessionId } = req.params;
+    const violations = await awsService.getViolationsBySessionId(sessionId);
+    
+    // We can directly map and return them, adding presigned URL or let frontend ask.
+    // Instead of making the frontend ask per photo, let's just generate the presigned url here
+    // for fewer round trips if there is an evidence key.
+    const enriched = await Promise.all(violations.map(async (v) => {
+      let evidenceUrl = '';
+      if (v.evidenceKey) {
+        try {
+          evidenceUrl = await awsService.generateGetPresignedUrl(v.evidenceKey);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return {
+        ...v,
+        evidenceUrl
+      };
+    }));
+
+    // Filter out non-violation events like EXAM_COMPLETED
+    const finalViolations = enriched.filter(v => v.violationType && v.violationType !== 'SESSION_STARTED' && v.violationType !== 'EXAM_COMPLETED');
+
+    return res.json({ success: true, data: finalViolations });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const getAdminStudents = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -368,8 +299,10 @@ export const getAdminViolations = async (req: Request, res: Response, next: Next
 
 export const getAdminExams = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const exams = Array.from(examConfigs.values()).map(exam => ({
+    const examsList = await awsService.listExams();
+    const exams = examsList.map(exam => ({
       ...exam,
+      id: exam.examId,
       status: resolveExamStatus(exam),
     }));
 
@@ -382,7 +315,7 @@ export const getAdminExams = async (req: Request, res: Response, next: NextFunct
 export const updateAdminExamSettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { examId } = req.params;
-    const current = examConfigs.get(examId);
+    const current = await awsService.getExam(examId);
 
     if (!current) {
       return res.status(404).json({ success: false, message: 'Exam not found' });
@@ -390,12 +323,14 @@ export const updateAdminExamSettings = async (req: Request, res: Response, next:
 
     const { duration, startTime, enabled, requireFullscreen } = req.body || {};
 
+    const updates: any = {};
+
     if (duration !== undefined) {
       const parsedDuration = Number(duration);
       if (!Number.isFinite(parsedDuration) || parsedDuration < 10 || parsedDuration > 480) {
         return res.status(400).json({ success: false, message: 'duration must be between 10 and 480 minutes' });
       }
-      current.duration = Math.round(parsedDuration);
+      updates.duration = Math.round(parsedDuration);
     }
 
     if (startTime !== undefined) {
@@ -403,25 +338,26 @@ export const updateAdminExamSettings = async (req: Request, res: Response, next:
       if (!Number.isFinite(parsedStart)) {
         return res.status(400).json({ success: false, message: 'startTime must be a valid ISO date string' });
       }
-      current.startTime = new Date(parsedStart).toISOString();
+      updates.startTime = new Date(parsedStart).toISOString();
     }
 
     if (enabled !== undefined) {
-      current.enabled = Boolean(enabled);
+      updates.enabled = Boolean(enabled);
     }
 
     if (requireFullscreen !== undefined) {
-      current.requireFullscreen = Boolean(requireFullscreen);
+      updates.requireFullscreen = Boolean(requireFullscreen);
     }
 
-    examConfigs.set(examId, current);
+    const updatedExam = await awsService.updateExam(examId, updates);
 
     res.json({
       success: true,
       message: 'Exam settings updated',
       data: {
-        ...current,
-        status: resolveExamStatus(current),
+        ...updatedExam,
+        id: updatedExam.examId,
+        status: resolveExamStatus(updatedExam),
       },
     });
   } catch (error) {
@@ -432,7 +368,7 @@ export const updateAdminExamSettings = async (req: Request, res: Response, next:
 export const sendAdminExamNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { examId } = req.params;
-    const exam = examConfigs.get(examId);
+    const exam = await awsService.getExam(examId);
     if (!exam) {
       return res.status(404).json({ success: false, message: 'Exam not found' });
     }
@@ -452,7 +388,7 @@ export const sendAdminExamNotification = async (req: Request, res: Response, nex
 
     const emailBody =
       message ||
-      `Exam update: ${exam.title} (${exam.id})\nStart: ${exam.startTime}\nDuration: ${exam.duration} minutes\nEnabled: ${exam.enabled ? 'Yes' : 'No'}\nFullscreen required: ${exam.requireFullscreen ? 'Yes' : 'No'}`;
+      `Exam update: ${exam.title} (${exam.examId})\nStart: ${exam.startTime}\nDuration: ${exam.duration} minutes\nEnabled: ${exam.enabled ? 'Yes' : 'No'}\nFullscreen required: ${exam.requireFullscreen ? 'Yes' : 'No'}`;
 
     const results = await Promise.allSettled(
       cleanRecipients.map(email => awsService.sendAdminNotificationEmail(email, emailBody))
@@ -489,15 +425,16 @@ export const sendAdminExamNotification = async (req: Request, res: Response, nex
 
 export const getStudentExams = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const exams = Array.from(examConfigs.values()).map(exam => ({
-      id: exam.id,
+    const examsList = await awsService.listActiveExams();
+    const exams = examsList.map(exam => ({
+      id: exam.examId,
       title: exam.title,
       description: exam.description,
       startTime: exam.startTime,
       duration: exam.duration,
-      totalQuestions: exam.totalQuestions,
+      totalQuestions: exam.totalQuestions || 0,
       status: resolveExamStatus(exam),
-      instructions: exam.instructions,
+      instructions: exam.instructions || [],
       enabled: exam.enabled,
       requireFullscreen: exam.requireFullscreen,
     }));
@@ -515,12 +452,13 @@ export const createCustomExam = async (req: Request, res: Response, next: NextFu
       return res.status(400).json({ success: false, message: 'ID, title, and duration are required' });
     }
 
-    if (examConfigs.has(id)) {
+    const existingId = await awsService.getExam(id);
+    if (existingId) {
       return res.status(409).json({ success: false, message: `Exam with ID ${id} already exists` });
     }
 
-    const newConfig: ExamConfig = {
-      id,
+    const newConfig: any = {
+      examId: id,
       title,
       description: description || '',
       duration: Number(duration),
@@ -529,11 +467,12 @@ export const createCustomExam = async (req: Request, res: Response, next: NextFu
       startTime: req.body.startTime || new Date().toISOString(),
       enabled: req.body.enabled !== false,
       requireFullscreen: requireFullscreen !== false,
+      sections: req.body.sections || []
     };
 
-    examConfigs.set(id, newConfig);
+    const savedExam = await awsService.createExam(newConfig);
 
-    res.json({ success: true, message: 'Custom exam created successfully', data: newConfig });
+    res.json({ success: true, message: 'Custom exam created successfully', data: { ...savedExam, id: savedExam.examId } });
   } catch (error) {
     next(error);
   }

@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Search, Grid3X3, LayoutList, 
   AlertTriangle, Users, Activity, Clock, LogOut,
-  Video, MoreVertical, Download, Bell, Mail, CalendarDays, ToggleLeft, ToggleRight, SendHorizontal
+  Video, MoreVertical, Download, Bell
 } from 'lucide-react';
 import { cn, getRelativeTime } from '@/lib/utils';
 import type { StudentCard, Violation } from '@/types';
 import { ViolationModal } from '@/components/modals/ViolationModal';
 import { CreateExamModal } from '@/components/modals/CreateExamModal';
 import { fetchApi } from '@/lib/api';
+import { useSocket } from '@/hooks/useSocket';
+import { X } from 'lucide-react';
+import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 
 // Empty initial states
 const mockStudents: StudentCard[] = [];
@@ -30,17 +33,40 @@ export function AdminDashboard() {
   const [violations, setViolations] = useState<Violation[]>(mockViolations);
   const [examConfigs, setExamConfigs] = useState<AdminExamConfig[]>([]);
   const [selectedExamId, setSelectedExamId] = useState('');
-  const [savingExam, setSavingExam] = useState(false);
-  const [emailRecipients, setEmailRecipients] = useState('');
-  const [emailMessage, setEmailMessage] = useState('');
-  const [adminActionMessage, setAdminActionMessage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedStudent, setSelectedStudent] = useState<StudentCard | null>(null);
   const [showViolationModal, setShowViolationModal] = useState(false);
+  const [showLiveDrawer, setShowLiveDrawer] = useState(false);
   const [showCreateExamModal, setShowCreateExamModal] = useState(false);
   const [notifications] = useState(3);
+  const [liveFeeds, setLiveFeeds] = useState<Record<string, string>>({});
+
+  const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
+  const { socket, connect, disconnect } = useSocket(adminToken);
+
+  useEffect(() => {
+    connect();
+    return () => disconnect();
+  }, [connect, disconnect]);
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleFrame = (data: { sessionId: string; imageBase64: string }) => {
+      setLiveFeeds(prev => ({
+        ...prev,
+        [data.sessionId]: data.imageBase64
+      }));
+    };
+
+    socket.on('admin_mobile_feed_frame', handleFrame);
+    
+    return () => {
+      socket.off('admin_mobile_feed_frame', handleFrame);
+    };
+  }, [socket]);
 
   const fetchExams = async () => {
     const examsRes = await fetchApi('/dashboard/admin/exams');
@@ -85,57 +111,11 @@ export function AdminDashboard() {
     return () => clearInterval(interval);
   }, [selectedExamId]);
 
-  const selectedExam = examConfigs.find(exam => exam.id === selectedExamId);
 
-  const setActionMessage = (message: string) => {
-    setAdminActionMessage(message);
-    setTimeout(() => setAdminActionMessage(null), 3000);
-  };
 
-  const updateExamSettings = async (payload: Partial<Pick<AdminExamConfig, 'enabled' | 'duration' | 'startTime' | 'requireFullscreen'>>) => {
-    if (!selectedExam) return;
-    setSavingExam(true);
-    try {
-      const res = await fetchApi(`/dashboard/admin/exams/${selectedExam.id}/settings`, {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      });
-      if (res?.success) {
-        const updated = res.data as AdminExamConfig;
-        setExamConfigs(prev => prev.map(exam => (exam.id === updated.id ? updated : exam)));
-        setActionMessage('Exam settings saved');
-      }
-    } catch (error: any) {
-      setActionMessage(error?.message || 'Failed to save exam settings');
-    } finally {
-      setSavingExam(false);
-    }
-  };
-
-  const handleSendExamNotification = async () => {
-    if (!selectedExam) return;
-    const recipients = emailRecipients
-      .split(',')
-      .map(v => v.trim())
-      .filter(Boolean);
-
-    if (recipients.length === 0) {
-      setActionMessage('Enter at least one recipient email');
-      return;
-    }
-
-    try {
-      const res = await fetchApi(`/dashboard/admin/exams/${selectedExam.id}/notify`, {
-        method: 'POST',
-        body: JSON.stringify({ recipients, message: emailMessage.trim() || undefined }),
-      });
-
-      if (res?.success) {
-        setActionMessage(`Email sent to ${res.sentTo || recipients.length} recipient(s)`);
-      }
-    } catch (error: any) {
-      setActionMessage(error?.message || 'Failed to send notification email');
-    }
+  const setActionMessage = (message: string | null) => {
+    setActionMessage(message);
+    setTimeout(() => setActionMessage(null), 3000);
   };
 
   const filteredStudents = students.filter(s => {
@@ -158,7 +138,7 @@ export function AdminDashboard() {
 
   const handleStudentClick = (student: StudentCard) => {
     setSelectedStudent(student);
-    setShowViolationModal(true);
+    setShowLiveDrawer(true);
   };
 
   const handleTerminate = async (sessionId: string) => {
@@ -169,12 +149,12 @@ export function AdminDashboard() {
       if (res?.success) {
         setStudents(prev => prev.filter(s => s.sessionId !== sessionId));
         setViolations(prev => prev.filter(v => v.sessionId !== sessionId));
-        setAdminActionMessage(res.message || 'Session terminated successfully');
-        setTimeout(() => setAdminActionMessage(null), 4000);
+        setActionMessage(res.message || 'Session terminated successfully');
+        setTimeout(() => setActionMessage(null), 4000);
       }
     } catch (err: any) {
-      setAdminActionMessage(err?.message || 'Failed to terminate session');
-      setTimeout(() => setAdminActionMessage(null), 4000);
+      setActionMessage(err?.message || 'Failed to terminate session');
+      setTimeout(() => setActionMessage(null), 4000);
     }
     setShowViolationModal(false);
   };
@@ -293,128 +273,98 @@ export function AdminDashboard() {
       <div className="flex h-[calc(100vh-140px)]">
         {/* Student Grid/List */}
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          <section className="mb-5 rounded-2xl border border-cyan/20 bg-cyan/5 p-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <div className="flex items-center gap-3">
-                  <h3 className="font-sora text-base font-semibold text-white">Exam Controls</h3>
-                  <button
-                    onClick={() => setShowCreateExamModal(true)}
-                    className="flex items-center gap-1.5 rounded bg-cyan/20 px-2 py-1 text-xs font-medium text-cyan hover:bg-cyan/30 transition-colors"
-                  >
-                    + New Exam
-                  </button>
-                </div>
-                <p className="text-xs text-text-secondary">Enable tests, set timing, require fullscreen, and notify students</p>
-              </div>
-              {adminActionMessage && (
-                <div className="rounded-lg border border-cyan/30 bg-cyan/10 px-3 py-2 text-xs text-cyan">
-                  {adminActionMessage}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-4 grid gap-3 lg:grid-cols-2">
-              <div className="space-y-3 rounded-xl border border-white/10 bg-navy-800/40 p-3">
-                <label className="text-xs text-text-secondary">Select Exam</label>
-                <select
-                  value={selectedExamId}
-                  onChange={(e) => setSelectedExamId(e.target.value)}
-                  className="input-dark w-full py-2 text-sm"
-                >
-                  {examConfigs.map(exam => (
-                    <option key={exam.id} value={exam.id}>{exam.id} - {exam.title}</option>
-                  ))}
-                </select>
-
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button
-                    onClick={() => selectedExam && updateExamSettings({ enabled: !selectedExam.enabled })}
-                    disabled={!selectedExam || savingExam}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
-                  >
-                    {selectedExam?.enabled ? <ToggleRight strokeWidth={1} className="h-4 w-4 text-white/60" /> : <ToggleLeft strokeWidth={1} className="h-4 w-4 text-warning" />}
-                    {selectedExam?.enabled ? 'Disable Test' : 'Enable Test'}
-                  </button>
-                  <button
-                    onClick={() => selectedExam && updateExamSettings({ requireFullscreen: !selectedExam.requireFullscreen })}
-                    disabled={!selectedExam || savingExam}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
-                  >
-                    <CalendarDays strokeWidth={1} className="h-4 w-4 text-cyan" />
-                    {selectedExam?.requireFullscreen ? 'Fullscreen: ON' : 'Fullscreen: OFF'}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs text-text-secondary">Duration (minutes)</label>
-                    <input
-                      type="number"
-                      min={10}
-                      max={480}
-                      value={selectedExam?.duration || ''}
-                      onChange={(e) => {
-                        const value = Number(e.target.value || 0);
-                        setExamConfigs(prev => prev.map(exam => (
-                          exam.id === selectedExamId ? { ...exam, duration: value } : exam
-                        )));
-                      }}
-                      onBlur={() => selectedExam && updateExamSettings({ duration: selectedExam.duration })}
-                      className="input-dark mt-1 w-full py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-text-secondary">Start Time</label>
-                    <input
-                      type="datetime-local"
-                      value={selectedExam ? new Date(selectedExam.startTime).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => {
-                        if (!e.target.value) return;
-                        const parsed = new Date(e.target.value);
-                        if (Number.isNaN(parsed.getTime())) return;
-                        const iso = parsed.toISOString();
-                        setExamConfigs(prev => prev.map(exam => (
-                          exam.id === selectedExamId ? { ...exam, startTime: iso } : exam
-                        )));
-                      }}
-                      onBlur={() => selectedExam && updateExamSettings({ startTime: selectedExam.startTime })}
-                      className="input-dark mt-1 w-full py-2 text-sm"
-                    />
-                  </div>
+          
+            {/* EXAM DATA TABLE */}
+            <section className="mb-5 rounded-2xl border border-cyan/20 bg-cyan/5 p-4 flex flex-col gap-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center justify-between w-full lg:w-auto">
+                    <h3 className="font-sora text-base font-semibold text-white">Exam Controls</h3>
+                    <button
+                      onClick={() => setShowCreateExamModal(true)}
+                      className="flex items-center gap-1.5 rounded bg-cyan/20 px-3 py-1.5 text-xs font-medium text-cyan hover:bg-cyan/30 transition-colors ml-4 lg:ml-0"
+                    >
+                      <Grid3X3 className="h-3.5 w-3.5" />
+                      New Exam
+                    </button>
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-xl border border-white/10 bg-navy-800/40 p-3">
-                <label className="text-xs text-text-secondary">Send Exam Email Notification</label>
-                <div className="relative">
-                  <Mail strokeWidth={1} className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                  <input
-                    type="text"
-                    value={emailRecipients}
-                    onChange={(e) => setEmailRecipients(e.target.value)}
-                    placeholder="student1@college.edu, student2@college.edu"
-                    className="input-dark w-full py-2 pl-10 text-sm"
-                  />
-                </div>
-                <textarea
-                  value={emailMessage}
-                  onChange={(e) => setEmailMessage(e.target.value)}
-                  placeholder="Optional custom message"
-                  rows={4}
-                  className="input-dark w-full resize-none py-2 text-sm"
-                />
-                <button
-                  onClick={handleSendExamNotification}
-                  disabled={!selectedExam}
-                  className="flex items-center gap-2 rounded-lg bg-cyan px-4 py-2 text-sm font-semibold text-navy-900 hover:bg-cyan-light disabled:opacity-60"
-                >
-                  <SendHorizontal strokeWidth={1} className="h-4 w-4" />
-                  Send Email
-                </button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-cyan/10 text-cyan/70 text-xs uppercase bg-cyan/5">
+                    <tr>
+                      <th className="px-4 py-3 font-medium rounded-tl-lg">Title</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium">Start Date</th>
+                      <th className="px-4 py-3 font-medium">Duration</th>
+                      <th className="px-4 py-3 font-medium text-right rounded-tr-lg">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-cyan/10">
+                    {examConfigs.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-white/50">
+                          No exams found. Create your first exam above.
+                        </td>
+                      </tr>
+                    ) : (
+                      examConfigs.map((exam) => (
+                        <tr key={exam.id} className="hover:bg-cyan/5 transition-colors">
+                          <td className="px-4 py-3 font-medium text-white">{exam.title}</td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+                                exam.status === 'active'
+                                  ? 'bg-rose-500/20 text-rose-400'
+                                  : exam.status === 'upcoming'
+                                  ? 'bg-blue-500/20 text-blue-400'
+                                  : 'bg-emerald-500/20 text-emerald-400'
+                              )}
+                            >
+                              {exam.status.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-white/70">
+                            {new Date(exam.startTime).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-white/70">{exam.duration}m</td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedExamId(exam.id);
+                                  setShowCreateExamModal(true);
+                                }}
+                                className="p-1 hover:text-cyan text-white/50 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Delete exam?')) {
+                                    try {
+                                      await fetchApi(`/api/exam/${exam.id}`, { method: 'DELETE' }); // adminToken not needed
+                                      setExamConfigs(prev => prev.filter(e => e.id !== exam.id));
+                                    } catch (err) {
+                                      console.error('Failed to delete exam', err);
+                                    }
+                                  }
+                                }}
+                                className="p-1 hover:text-rose-400 text-white/50 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            </div>
-          </section>
+            </section>
+
 
           <section className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -486,9 +436,16 @@ export function AdminDashboard() {
           )}
 
           {filteredStudents.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-64 text-text-secondary">
-              <Users strokeWidth={1} className="h-12 w-12 mb-4 opacity-30" />
-              <p>No students found</p>
+            <div className="flex flex-col items-center justify-center p-8 text-white/50 h-64">
+              <Empty className="border-white/10 bg-white/5">
+                <EmptyMedia variant="icon">
+                  <Users strokeWidth={1} className="h-6 w-6 text-white/50" />
+                </EmptyMedia>
+                <EmptyTitle className="text-white">No students found</EmptyTitle>
+                <EmptyDescription className="text-white/60">
+                  Nobody is matching your filters or no one has started the exam yet.
+                </EmptyDescription>
+              </Empty>
             </div>
           )}
         </main>
@@ -506,6 +463,17 @@ export function AdminDashboard() {
           </div>
 
           <div className="p-4 space-y-3">
+            {violations.length === 0 && (
+              <Empty className="border-white/10 bg-white/5 py-8">
+                <EmptyMedia variant="icon" className="bg-success/10">
+                  <Activity strokeWidth={1} className="h-6 w-6 text-success" />
+                </EmptyMedia>
+                <EmptyTitle className="text-white text-sm">All Clear</EmptyTitle>
+                <EmptyDescription className="text-white/60 text-xs">
+                  No anomalies detected.
+                </EmptyDescription>
+              </Empty>
+            )}
             {violations.map((violation, index) => {
               const student = students.find(s => s.sessionId === violation.sessionId);
               return (
@@ -580,6 +548,134 @@ export function AdminDashboard() {
         </aside>
       </div>
 
+      {/* Side Drawer for Student Live Feed */}
+      <AnimatePresence>
+        {showLiveDrawer && selectedStudent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="flex h-full w-full max-w-md flex-col bg-navy-900 border-l border-white/10 shadow-2xl"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between border-b border-white/10 p-4 bg-navy-800">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-10 w-10 overflow-hidden rounded-full border border-white/10 bg-navy-800">
+                    {selectedStudent.studentAvatar ? (
+                      <img
+                        src={selectedStudent.studentAvatar}
+                        alt="Avatar"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Users strokeWidth={1} className="h-6 w-6 text-white/30" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">{selectedStudent.studentName}</h2>
+                    <p className="text-xs text-text-secondary">{selectedStudent.studentId}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowLiveDrawer(false)}
+                  className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <X strokeWidth={1} className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Drawer Body */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
+                
+                {/* Mobile Feed */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                      <Video strokeWidth={1} className="h-4 w-4 text-cyan" />
+                      Mobile Live Feed
+                    </h3>
+                    <span className="flex items-center gap-1 text-xs text-violation px-2 py-0.5 bg-violation/10 rounded-full animate-pulse">
+                      <span className="h-1.5 w-1.5 rounded-full bg-violation"></span>
+                      LIVE
+                    </span>
+                  </div>
+                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center">
+                    {liveFeeds[selectedStudent.sessionId] ? (
+                      <img 
+                        src={liveFeeds[selectedStudent.sessionId]} 
+                        alt="Mobile Feed" 
+                        className="h-full w-full object-cover" 
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-white/30 space-y-2">
+                        <Video strokeWidth={1} className="h-8 w-8" />
+                        <span className="text-xs">Connecting feed...</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Real-time Violation Badges */}
+                <div>
+                  <h3 className="text-sm font-medium text-white flex items-center gap-2 mb-3">
+                    <AlertTriangle strokeWidth={1} className="h-4 w-4 text-warning" />
+                    Recent Violations
+                  </h3>
+                  <div className="space-y-2">
+                    {violations
+                      .filter((v) => v.sessionId === selectedStudent.sessionId)
+                      .slice(0, 5)
+                      .map((v) => (
+                        <div key={v.id} className="flex flex-col bg-white/5 border border-white/10 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-white">{v.description}</span>
+                            <span className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full",
+                              v.severity === 'high' ? 'bg-violation/20 text-violation' : 'bg-warning/20 text-warning'
+                            )}>
+                              {v.severity.toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-xs text-text-secondary mt-1">{getRelativeTime(v.timestamp)}</span>
+                        </div>
+                      ))}
+                    {violations.filter((v) => v.sessionId === selectedStudent.sessionId).length === 0 && (
+                      <div className="text-xs text-text-secondary text-center py-4 bg-white/5 rounded-lg border border-white/10">
+                        No active violations detected.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div className="border-t border-white/10 bg-navy-800 p-4 flex gap-3">
+                <button
+                  onClick={() => setShowViolationModal(true)}
+                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+                >
+                  Full Report
+                </button>
+                <button
+                  onClick={() => handleTerminate(selectedStudent.sessionId)}
+                  className="flex-1 rounded-lg bg-violation/20 border border-violation/30 px-4 py-2 text-sm font-semibold text-violation hover:bg-violation/30 transition-colors"
+                >
+                  Terminate
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Violation Modal */}
       <ViolationModal
         isOpen={showViolationModal}
@@ -591,7 +687,11 @@ export function AdminDashboard() {
 
       <CreateExamModal
         isOpen={showCreateExamModal}
-        onClose={() => setShowCreateExamModal(false)}
+        onClose={() => {
+          setShowCreateExamModal(false);
+          setSelectedExamId('');
+        }}
+        examId={selectedExamId}
         onExamCreated={fetchExams}
       />
     </div>

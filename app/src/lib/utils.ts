@@ -109,6 +109,10 @@ export function getViolationIcon(type: string): string {
 
 export function getViolationDescription(type: string): string {
   switch (type.toLowerCase()) {
+    case 'tab_switch':
+      return 'Navigated away from the exam tab';
+    case 'copy_paste':
+      return 'Attempted to copy or paste content';
     case 'multiple_faces':
     case 'multiple_persons_detected':
       return 'Multiple faces detected in frame';

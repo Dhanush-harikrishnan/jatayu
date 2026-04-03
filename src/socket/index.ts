@@ -26,13 +26,17 @@ export const initializeSocketServer = (server: HttpServer) => {
     try {
       const token = socket.handshake.auth?.token;
       if (!token) {
-        return next(new Error('Authentication error'));
+        const err: any = new Error('Authentication error');
+        err.data = { retry: false };
+        return next(err);
       }
       const decoded = verifyToken(token);
       socket.data.user = decoded; // Store standard payload: role, sessionId, userId
       next();
     } catch (err) {
-      next(new Error('Authentication error'));
+      const error: any = new Error('Authentication error');
+      error.data = { retry: true, message: 'Try reconnecting' };
+      next(error);
     }
   });
 

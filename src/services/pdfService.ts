@@ -4,6 +4,8 @@ export interface ReportData {
   examId: string;
   sessionId: string;
   studentEmail: string;
+  score?: number;
+  totalPoints?: number;
   violations: {
     type: string;
     timestamp: string;
@@ -26,6 +28,13 @@ const VIOLATION_LABELS: Record<string, string> = {
   FACE_NOT_DETECTED: 'Face Not Detected',
   LOOKING_AWAY: 'Looking Away',
   PHONE_MOVEMENT_DETECTED: 'Phone Movement Detected',
+  BOOK_DETECTED: 'Book/Document Detected',
+  MULTIPLE_LAPTOPS_DETECTED: 'Multiple Laptops/Computers Detected',
+  MULTIPLE_PERSONS_DETECTED_MOBILE: 'Multiple Persons Detected (Mobile)',
+  OFF_SCREEN_TYPING: 'Off-Screen Typing Suspected',
+  SUSPECTED_TRANSCRIPTION: 'Suspected Voice Transcription',
+  TAB_SWITCH: 'Tab Switch / Interruption',
+  COPY_PASTE: 'Clipboard Action Detected',
 };
 
 const SEVERITY_COLORS: Record<string, [number, number, number]> = {
@@ -36,6 +45,18 @@ const SEVERITY_COLORS: Record<string, [number, number, number]> = {
   face_not_detected: [255, 153, 0],
   looking_away: [255, 153, 0],
   gyro_movement: [255, 153, 0],
+  PHONE_DETECTED: [220, 53, 69],
+  MULTIPLE_PERSONS_DETECTED: [220, 53, 69],
+  FACE_NOT_DETECTED: [255, 153, 0],
+  LOOKING_AWAY: [255, 153, 0],
+  PHONE_MOVEMENT_DETECTED: [255, 153, 0],
+  BOOK_DETECTED: [220, 53, 69],
+  MULTIPLE_LAPTOPS_DETECTED: [220, 53, 69],
+  MULTIPLE_PERSONS_DETECTED_MOBILE: [220, 53, 69],
+  OFF_SCREEN_TYPING: [255, 153, 0],
+  SUSPECTED_TRANSCRIPTION: [220, 53, 69],
+  TAB_SWITCH: [255, 153, 0],
+  COPY_PASTE: [220, 53, 69],
 };
 
 function drawHLine(doc: PDFKit.PDFDocument, color: [number, number, number] = [60, 60, 80]) {
@@ -44,7 +65,7 @@ function drawHLine(doc: PDFKit.PDFDocument, color: [number, number, number] = [6
 }
 
 function severityOf(type: string): string {
-  const high = ['phone_detected', 'multiple_faces', 'copy_paste_attempt', 'voice_detected'];
+  const high = ['phone_detected', 'multiple_faces', 'copy_paste_attempt', 'voice_detected', 'PHONE_DETECTED', 'MULTIPLE_PERSONS_DETECTED', 'BOOK_DETECTED', 'MULTIPLE_LAPTOPS_DETECTED', 'MULTIPLE_PERSONS_DETECTED_MOBILE', 'SUSPECTED_TRANSCRIPTION', 'COPY_PASTE'];
   return high.includes(type) ? 'HIGH' : 'MEDIUM';
 }
 
@@ -85,6 +106,10 @@ export const generatePdfReport = async (data: ReportData): Promise<Buffer> => {
         ['Report Date', now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
         ['Report Time', now.toLocaleTimeString('en-IN')],
       ];
+      if (data.score !== undefined) {
+        details.push(['Score', `${data.score} / ${data.totalPoints || '?'}`]);
+      }
+      
       details.forEach(([label, value]) => {
         doc.font('Helvetica-Bold').fill([140, 160, 200]).fontSize(9).text(label + ':', 50, doc.y, { continued: true, width: 120 });
         doc.font('Helvetica').fill([220, 230, 255]).fontSize(9).text(' ' + value);

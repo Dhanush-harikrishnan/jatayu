@@ -1,8 +1,12 @@
 import { Router } from 'express';
-import { generatePairingLink, createLivenessSession, getLivenessResult, getPresignedUrl, analyzeFrame, analyzeSetupFrame, analyzeLiveFrame, sendExamReport } from '../controllers/examController';
+import { generatePairingLink, createLivenessSession, getLivenessResult, getPresignedUrl, analyzeFrame, analyzeSetupFrame, analyzeLiveFrame, sendExamReport, submitExam, getExamById, deleteExamById } from '../controllers/examController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
 const router = Router();
+
+// CRUD Endpoints for Exam
+router.get('/:examId', authenticate, getExamById);
+router.delete('/:examId', authenticate, requireRole(['admin']), deleteExamById);
 
 // Endpoint for the primary laptop to request pairing for a secondary device
 router.post('/:examId/pair', authenticate, requireRole(['primary']), generatePairingLink);
@@ -13,5 +17,6 @@ router.post('/:examId/analyze-frame', authenticate, requireRole(['primary']), an
 router.post('/:examId/analyze-setup-frame', authenticate, requireRole(['primary']), analyzeSetupFrame);
 router.post('/:examId/analyze-live-frame', authenticate, requireRole(['primary']), analyzeLiveFrame);
 router.post('/:examId/report/:sessionId', authenticate, requireRole(['primary', 'admin']), sendExamReport);
+router.post('/:examId/submit', authenticate, requireRole(['primary']), submitExam);
 
 export const examRoutes = router;

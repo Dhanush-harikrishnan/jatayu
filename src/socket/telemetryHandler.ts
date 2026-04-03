@@ -5,6 +5,39 @@ import { analyzeKeystrokes } from '../services/keystrokeDynamics';
 import { logger } from '../logger';
 import { config } from '../config/env';
 
+// Basic Token Bucket per operation type
+class TokenBucket {
+  private tokens: number;
+  private lastRefill: number;
+  private readonly capacity: number;
+  private readonly refillRatePerSec: number;
+
+  constructor(capacity: number, refillRatePerSec: number) {
+    this.capacity = capacity;
+    this.tokens = capacity;
+    this.refillRatePerSec = refillRatePerSec;
+    this.lastRefill = Date.now();
+  }
+
+  tryConsume(): boolean {
+    const now = Date.now();
+    const elapsedSecs = (now - this.lastRefill) / 1000;
+    this.tokens = Math.min(this.capacity, this.tokens + elapsedSecs * this.refillRatePerSec);
+    this.lastRefill = now;
+
+    if (this.tokens >= 1) {
+      this.tokens -= 1;
+      return true;
+    }
+    return false;
+  }
+}
+
+// Instantiate rate limiters using the env limit
+const maxRps = config.aws?.rekognitionRpsLimit || 5;
+const detectFacesLimiter = new TokenBucket(maxRps, maxRps);
+const detectLabelsLimiter = new TokenBucket(maxRps, maxRps);
+
 const lastPrimaryEvidenceUploadAt = new Map<string, number>();
 const lastSecondaryEvidenceUploadAt = new Map<string, number>();
 
@@ -28,6 +61,10 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         }
 
         // Laptop camera -> Detect Faces
+        if (!detectFacesLimiter.tryConsume()) {
+          logger.debug('Rate limit exceeded for detectFaces, dropping frame.');
+          return;
+        }
         const res = await awsService.detectFaces(buffer);
         const faceCount = res.FaceDetails?.length || 0;
         const primaryFace = res.FaceDetails?.[0];
@@ -58,6 +95,10 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         // analysis at 5s intervals.
 
         // Mobile camera -> Detect Labels
+        if (!detectLabelsLimiter.tryConsume()) {
+          logger.debug('Rate limit exceeded for detectLabels, dropping frame.');
+          return;
+        }
         const res = await awsService.detectLabels(buffer);
         const labels = res.Labels || [];
 
@@ -160,7 +201,8 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
   // Keystrokes ingestion
   socket.on('keystrokes', async (data: { vectors: number[], timestamp: number }) => {
     try {
-      const score = await analyzeKeystrokes(data.vectors);
+      const sessionId: string = socket.data.user.sessionId;
+      const score = await analyzeKeystrokes(sessionId, data.vectors);
       engine.addEvent({
         type: 'KEYSTROKE',
         timestamp: data.timestamp,
@@ -186,8 +228,10 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
   // rather than choppy frame-by-frame updates.
   socket.on('visual_frame', (data: { imageBase64: string }) => {
     const { role } = socket.data.user;
+    const sessionId: string = socket.data.user.sessionId;
     if (role === 'secondary_camera') {
       socket.to(roomName).emit('mobile_feed_frame', { imageBase64: data.imageBase64 });
+      socket.to('admin_room').emit('admin_mobile_feed_frame', { sessionId, imageBase64: data.imageBase64 });
     }
   });
 
@@ -200,5 +244,23 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
         data: { deviation: data.deviation }
       });
     }
+  });
+
+  // Tab switch event (visibilitychange)
+  socket.on('tab_switch', (data: { timestamp: number }) => {
+    engine.addEvent({
+      type: 'TAB_SWITCH',
+      timestamp: data.timestamp,
+      data: {}
+    });
+  });
+
+  // Copy/Paste event
+  socket.on('copy_paste', (data: { action: 'copy' | 'paste', timestamp: number }) => {
+    engine.addEvent({
+      type: 'COPY_PASTE',
+      timestamp: data.timestamp,
+      data: { action: data.action }
+    });
   });
 };

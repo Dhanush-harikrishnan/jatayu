@@ -56,25 +56,40 @@ export function ExamLaunch({ examId = 'exam-1' }: ExamLaunchProps) {
     setPairingCode(generatePairingCode());
   }, []);
 
+  const [policyError, setPolicyError] = useState<string | null>(null);
+
   useEffect(() => {
     const loadExamPolicy = async () => {
+      setPolicyError(null);
       try {
         const res = await fetchApi('/dashboard/student/exams');
-        if (!res?.success || !Array.isArray(res?.data)) return;
+        if (!res?.success || !Array.isArray(res?.data)) {
+          setPolicyError('Failed to load exam policy.');
+          return;
+        }
 
         const currentExam = res.data.find((exam: any) => exam.id === examId);
-        if (!currentExam) return;
+        if (!currentExam) {
+          setPolicyError('Exam not found.');
+          return;
+        }
 
         setExamEnabled(currentExam.enabled !== false);
         setExamDurationMins(Number(currentExam.duration) > 0 ? Number(currentExam.duration) : 60);
         setRequireFullscreen(currentExam.requireFullscreen !== false);
       } catch (err) {
         console.error('Failed to load exam policy:', err);
+        setPolicyError('Network error loading exam. Retrying...');
+        setTimeout(() => loadExamPolicy(), 5000);
       }
     };
 
     loadExamPolicy();
   }, [examId]);
+
+  if (policyError) {
+    console.error(policyError);
+  }
 
   const [reqStatus, setReqStatus] = useState({
     internet: 'checking' as 'checking' | 'passed' | 'failed' | 'pending',

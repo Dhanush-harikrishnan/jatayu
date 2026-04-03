@@ -27,6 +27,8 @@ export const s3Client = new S3Client(awsConfig);
 export const dynamoClient = new DynamoDBClient(awsConfig);
 export const sesClient = new SESClient(awsConfig);
 
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
+
 export const awsService = {
   checkDatabaseConnection: async (): Promise<boolean> => {
     try {
@@ -48,17 +50,257 @@ export const awsService = {
       });
       const result = await dynamoClient.send(command);
       if (!result.Item) return null;
-      return {
-        email: result.Item.email.S,
-        passwordHash: result.Item.passwordHash?.S,
-        role: result.Item.role?.S,
-        name: result.Item.name?.S,
-        otp: result.Item.otp?.S,
-        otpExpiry: result.Item.otpExpiry?.S
-      };
+      return unmarshall(result.Item) as any;
     } catch (err) {
-      logger.error(`Failed to get user by email ${email}:`, err);
-      throw err;
+      logger.error('Failed to get user:', err);
+      return null;
+    }
+  },
+
+  // ============================================
+  // EXAM CRUD OPERATIONS
+  // ============================================
+
+  createExam: async (examData: any) => {
+    try {
+      const timestamp = new Date().toISOString();
+      const enabledStatus = String(examData.enabled !== undefined ? examData.enabled : true);
+      const item = {
+        ...examData,
+        enabledStatus,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      const command = new PutItemCommand({
+        TableName: 'SecureGuardExams',
+        Item: marshall(item, { removeUndefinedValues: true })
+      });
+      await dynamoClient.send(command);
+      return item;
+    } catch (error) {
+      logger.error('Error creating exam in DynamoDB', error);
+      throw error;
+    }
+  },
+
+  getExam: async (examId: string) => {
+    try {
+      const command = new GetItemCommand({
+        TableName: 'SecureGuardExams',
+        Key: marshall({ examId })
+      });
+      const result = await dynamoClient.send(command);
+      if (!result.Item) return null;
+      return unmarshall(result.Item);
+    } catch (error) {
+      logger.error(`Error fetching exam ${examId}`, error);
+      throw error;
+    }
+  },
+
+  updateExam: async (examId: string, updates: any) => {
+    try {
+      // First fetch the existing exam to merge
+      const existingExam = await awsService.getExam(examId);
+      if (!existingExam) throw new Error('Exam not found');
+
+      const enabledStatus = updates.enabled !== undefined ? String(updates.enabled) : existingExam.enabledStatus;
+      
+      const updatedItem = {
+        ...existingExam,
+        ...updates,
+        enabledStatus,
+        updatedAt: new Date().toISOString()
+      };
+
+      const command = new PutItemCommand({
+        TableName: 'SecureGuardExams',
+        Item: marshall(updatedItem, { removeUndefinedValues: true })
+      });
+      await dynamoClient.send(command);
+      return updatedItem;
+    } catch (error) {
+      logger.error(`Error updating exam ${examId}`, error);
+      throw error;
+    }
+  },
+
+  deleteExam: async (examId: string) => {
+    try {
+      const { DeleteItemCommand } = require('@aws-sdk/client-dynamodb');
+      const command = new DeleteItemCommand({
+        TableName: 'SecureGuardExams',
+        Key: marshall({ examId })
+      });
+      await dynamoClient.send(command);
+      return true;
+    } catch (error) {
+      logger.error(`Error deleting exam ${examId}`, error);
+      throw error;
+    }
+  },
+
+  listExams: async () => {
+    try {
+      const command = new ScanCommand({
+        TableName: 'SecureGuardExams'
+      });
+      const result = await dynamoClient.send(command);
+      return (result.Items || []).map((item) => unmarshall(item));
+    } catch (error) {
+      logger.error('Error listing all exams', error);
+      throw error;
+    }
+  },
+
+  listActiveExams: async () => {
+    try {
+      const command = new QueryCommand({
+        TableName: 'SecureGuardExams',
+        IndexName: 'EnabledStartTimeIndex',
+        KeyConditionExpression: 'enabledStatus = :enabled',
+        ExpressionAttributeValues: marshall({
+          ':enabled': 'true'
+        })
+      });
+      
+      const result = await dynamoClient.send(command);
+      const exams = (result.Items || []).map((item) => unmarshall(item));
+      const now = new Date();
+
+      // Filter by now constraints
+      return exams.filter(e => {
+        const start = new Date(e.startTime);
+        const end = new Date(e.endTime);
+        return now >= start && now <= end;
+      });
+    } catch (error) {
+      logger.error('Error querying active exams', error);
+      throw error;
+    }
+  },
+
+  // ============================================
+  // QUESTION CRUD OPERATIONS
+  // ============================================
+
+  createQuestion: async (questionData: any) => {
+    try {
+      const command = new PutItemCommand({
+        TableName: 'SecureGuardQuestions',
+        Item: marshall(questionData, { removeUndefinedValues: true })
+      });
+      await dynamoClient.send(command);
+      return questionData;
+    } catch (error) {
+      logger.error('Error creating question in DynamoDB', error);
+      throw error;
+    }
+  },
+
+  batchCreateQuestions: async (questions: any[]) => {
+    try {
+      // DynamoDB batch write has a limit of 25 items per request.
+      const BATCH_SIZE = 25;
+      for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+        const batch = questions.slice(i, i + BATCH_SIZE);
+        const putRequests = batch.map(q => ({
+          PutRequest: {
+            Item: marshall(q, { removeUndefinedValues: true })
+          }
+        }));
+
+        const command = new BatchWriteItemCommand({
+          RequestItems: {
+            'SecureGuardQuestions': putRequests
+          }
+        });
+        await dynamoClient.send(command);
+      }
+      return questions;
+    } catch (error) {
+      logger.error('Error batch creating questions in DynamoDB', error);
+      throw error;
+    }
+  },
+
+  getQuestionsByExamId: async (examId: string) => {
+    try {
+      const command = new QueryCommand({
+        TableName: 'SecureGuardQuestions',
+        IndexName: 'ExamIdIndex',
+        KeyConditionExpression: 'examId = :examId',
+        ExpressionAttributeValues: marshall({
+          ':examId': examId
+        })
+      });
+      
+      const result = await dynamoClient.send(command);
+      return (result.Items || []).map((item) => unmarshall(item)).sort((a, b) => (a.order || 0) - (b.order || 0));
+    } catch (error) {
+      logger.error(`Error querying questions for exam ${examId}`, error);
+      throw error;
+    }
+  },
+
+  updateQuestion: async (questionId: string, updates: any) => {
+    try {
+      const command = new GetItemCommand({
+        TableName: 'SecureGuardQuestions',
+        Key: marshall({ questionId })
+      });
+      const result = await dynamoClient.send(command);
+      if (!result.Item) throw new Error('Question not found');
+      
+      const existingQuestion = unmarshall(result.Item);
+      const updatedItem = {
+        ...existingQuestion,
+        ...updates
+      };
+
+      const putCommand = new PutItemCommand({
+        TableName: 'SecureGuardQuestions',
+        Item: marshall(updatedItem, { removeUndefinedValues: true })
+      });
+      await dynamoClient.send(putCommand);
+      return updatedItem;
+    } catch (error) {
+      logger.error(`Error updating question ${questionId}`, error);
+      throw error;
+    }
+  },
+
+  deleteQuestion: async (questionId: string) => {
+    try {
+      const { DeleteItemCommand } = require('@aws-sdk/client-dynamodb');
+      const command = new DeleteItemCommand({
+        TableName: 'SecureGuardQuestions',
+        Key: marshall({ questionId })
+      });
+      await dynamoClient.send(command);
+      return true;
+    } catch (error) {
+      logger.error(`Error deleting question ${questionId}`, error);
+      throw error;
+    }
+  },
+
+  // ============================================
+  // SUBMISSION CRUD OPERATIONS
+  // ============================================
+
+  createSubmission: async (submissionData: any) => {
+    try {
+      const command = new PutItemCommand({
+        TableName: 'SecureGuardSubmissions',
+        Item: marshall(submissionData, { removeUndefinedValues: true })
+      });
+      await dynamoClient.send(command);
+      return submissionData;
+    } catch (error) {
+      logger.error('Error creating submission in DynamoDB', error);
+      throw error;
     }
   },
 

@@ -8,6 +8,9 @@ import {
 import { cn, formatDateTime, formatDuration } from '@/lib/utils';
 import type { Exam } from '@/types';
 import { fetchApi } from '@/lib/api';
+import { Empty, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Initial empty state for exams
 const mockExams: Exam[] = [];
@@ -38,13 +41,27 @@ const itemVariants = {
 export function StudentDashboard() {
   const [exams, setExams] = useState<Exam[]>(mockExams);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadExams = () => {
+    setLoading(true);
+    setError(null);
     fetchApi('/dashboard/student/exams').then(res => {
       if (res.success && res.data) {
         setExams(res.data);
+      } else {
+        setError('Failed to load exams.');
       }
+    }).catch(() => {
+      setError('Network error tracking exams.');
+    }).finally(() => {
+      setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    loadExams();
   }, []);
 
   useEffect(() => {
@@ -182,8 +199,55 @@ export function StudentDashboard() {
             </div>
           </motion.div>
 
+          {/* State Handling (Loading, Error, Empty) */}
+          {loading && (
+            <motion.div variants={itemVariants} className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center space-x-4 bg-white p-6 rounded-xl border border-slate-200">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {error && !loading && (
+            <motion.div variants={itemVariants}>
+              <Alert variant="destructive" className="bg-red-50 border-red-200">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertTitle className="text-red-800">Error Loading Exams</AlertTitle>
+                <AlertDescription className="text-red-700 flex items-center justify-between">
+                  {error}
+                  <button 
+                    onClick={loadExams}
+                    className="underline hover:text-red-900 font-medium"
+                  >
+                    Try Again
+                  </button>
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+
+          {!loading && !error && exams.length === 0 && (
+            <motion.div variants={itemVariants}>
+              <Empty className="bg-white border text-slate-500">
+                <EmptyMedia variant="icon">
+                  <Calendar className="text-slate-400" />
+                </EmptyMedia>
+                <EmptyTitle className="text-slate-700">No Exams Scheduled</EmptyTitle>
+                <EmptyDescription>
+                  You don't have any active or upcoming exams right now.
+                </EmptyDescription>
+              </Empty>
+            </motion.div>
+          )}
+
           {/* Active Exams Section */}
-          {activeExams.length > 0 && (
+          {!loading && !error && activeExams.length > 0 && (
             <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="font-sora text-xl font-semibold text-slate-900 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
@@ -198,7 +262,7 @@ export function StudentDashboard() {
           )}
 
           {/* Upcoming Exams Section */}
-          {upcomingExams.length > 0 && (
+          {!loading && !error && upcomingExams.length > 0 && (
             <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="font-sora text-xl font-semibold text-slate-900">Upcoming Exams</h3>
               <div className="grid gap-4">
@@ -210,7 +274,7 @@ export function StudentDashboard() {
           )}
 
           {/* Completed Exams Section */}
-          {completedExams.length > 0 && (
+          {!loading && !error && completedExams.length > 0 && (
             <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="font-sora text-xl font-semibold text-slate-500">Completed Exams</h3>
               <div className="grid gap-4">

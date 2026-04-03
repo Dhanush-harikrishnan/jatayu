@@ -13,6 +13,7 @@ import { LiveProctoring } from '@/pages/LiveProctoring';
 import { MobileCamera } from '@/pages/MobileCamera';
 import { AdminLogin } from '@/pages/AdminLogin';
 import { AdminDashboard } from '@/pages/AdminDashboard';
+import { ExamReport } from '@/pages/ExamReport';
 
 // Simple router based on URL path
 function useRouter() {
@@ -47,6 +48,9 @@ function App() {
     if (path.startsWith('/exam/') && path.endsWith('/proctor')) {
       const examId = path.split('/')[2];
       return <LiveProctoring examId={examId} />;
+    }
+    if (path === '/exam-report') {
+      return <ExamReport />;
     }
     if (path.startsWith('/mobile-pair')) {
       const searchParams = new URLSearchParams(window.location.search);

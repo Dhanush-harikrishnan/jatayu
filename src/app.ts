@@ -7,6 +7,7 @@ import { errorHandler } from './middlewares/errorHandler';
 import { authRoutes } from './routes/authRoute';
 import { examRoutes } from './routes/examRoute';
 import { dashboardRoutes } from './routes/dashboardRoute';
+import questionRoutes from './routes/questionRoute';
 import { awsService } from './services/awsService';
 import { config } from './config/env';
 
@@ -57,6 +58,7 @@ export const configureApp = (): Application => {
   app.use('/auth', authRoutes);
   app.use('/exam', examRoutes);
   app.use('/dashboard', dashboardRoutes);
+  app.use('/api/questions', questionRoutes);
 
   // Global Error Handler
   app.use(errorHandler);

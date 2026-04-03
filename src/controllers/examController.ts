@@ -373,7 +373,144 @@ export const analyzeLiveFrame = async (req: Request, res: Response, next: NextFu
   }
 };
 
+// Note: `sendExamReport` was imported up above, so let's make sure things are clean
 import { generatePdfReport } from '../services/pdfService';
+import { io } from '../socket';
+import { CorrelationEngine } from '../services/correlationEngine';
+
+export const submitExam = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { examId } = req.params;
+    const userSession = req.user;
+
+    if (!userSession) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (userSession.examId !== examId) {
+       return res.status(403).json({ success: false, message: 'Exam ID mismatch' });
+    }
+
+    const { sessionId, userId } = userSession;
+    const email = userId || 'unknown@domain.com';
+    const name = userId || 'Unknown Student';
+    
+    const { answers = {}, autoSubmitted = false } = req.body;
+
+    let score = 0;
+    let totalPoints = 0;
+    const timestamp = new Date().toISOString();
+
+    try {
+      const questions = await awsService.getQuestionsByExamId(examId);
+      for (const q of questions) {
+        if (q.sectionType !== 'CODING') {
+          totalPoints += (q.points || 1);
+          // Compare answers checking for string conversions occasionally
+          if (String(answers[q.id || q.questionId]) === String(q.correctAnswer)) {
+            score += (q.points || 1);
+          }
+        }
+      }
+
+      await awsService.createSubmission({
+        submissionId: `SUB-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        sessionId,
+        examId,
+        studentId: email,
+        answers,
+        score,
+        totalPoints,
+        submittedAt: timestamp,
+        autoSubmitted
+      });
+    } catch (dbErr) {
+      logger.error(`Error calculating score or saving submission for session ${sessionId}:`, dbErr);
+    }
+
+    // 1. Mark session logic (log an EXAM_COMPLETED event since we don't have a sessions table)
+    await awsService.logViolationEvent(
+      sessionId,
+      timestamp,
+      'EXAM_COMPLETED',
+      '',
+      { status: 'COMPLETED', score, totalPoints },
+      { userId: email, studentName: name, examId }
+    );
+
+    // 2. Clear out CorrelationEngine to stop processing late incoming frames
+    CorrelationEngine.destroyInstance(sessionId);
+
+    // 3. Emit `exam-ended`
+    if (io) {
+      io.to(`session_${sessionId}`).emit('exam-ended', { 
+        sessionId,
+        examId,
+        timestamp 
+      });
+    }
+
+    // 4. Trigger PDF generation & Email Report
+    // By re-using the logic from sendExamReport
+    try {
+      const dbViolations = await awsService.getViolationsBySessionId(sessionId).catch(() => []);
+      const filteredDbViolations = dbViolations.filter((v: any) => v.violationType && v.violationType !== 'SESSION_STARTED' && v.violationType !== 'EXAM_COMPLETED');
+      const sourceViolations = filteredDbViolations.map((v: any) => ({
+        type: v.violationType || 'unknown',
+        timestamp: v.timestamp || timestamp,
+        evidence: v.evidenceKey,
+        metadata: v.metadata,
+      }));
+
+      const violationsWithEvidence = await Promise.all(
+        sourceViolations.map(async (v: any) => {
+          const evidenceKey = normalizeEvidenceKey(v.evidence);
+          let evidenceImage: Buffer | undefined;
+          if (evidenceKey) {
+            try {
+              evidenceImage = await awsService.getEvidenceObjectBytes(evidenceKey);
+            } catch (err) {
+              logger.warn(`Unable to fetch evidence image for report: ${evidenceKey}`);
+            }
+          }
+
+          return {
+            type: v.type,
+            timestamp: v.timestamp,
+            evidence: evidenceKey || v.evidence,
+            metadata: v.metadata,
+            evidenceImage,
+          };
+        })
+      );
+
+      const pdfBuffer = await generatePdfReport({
+        examId,
+        sessionId,
+        studentEmail: email,
+        score,
+        totalPoints,
+        violations: violationsWithEvidence,
+      });
+
+      const adminEmail = process.env.ADMIN_EMAIL || config.aws.sesSourceEmail || email;
+      await awsService.sendPdfReportEmail(
+        adminEmail,
+        pdfBuffer,
+        `Exam Report - ${examId} - ${email}`,
+        `Please find attached the proctoring report for session ${sessionId}.`
+      );
+      logger.info(`Report generated and email initiated for session ${sessionId}`);
+    } catch (err: any) {
+      logger.error(`Error generating/sending report for session ${sessionId}:`, err);
+    }
+
+    return res.json({ success: true, message: 'Exam submitted successfully' });
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const sendExamReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -542,6 +679,25 @@ export const generatePairingLink = async (req: Request, res: Response, next: Nex
       pairingToken,
       magicLink,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getExamById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const exam = await awsService.getExam(req.params.examId);
+    if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+    res.json({ success: true, data: exam });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteExamById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await awsService.deleteExam(req.params.examId);
+    res.json({ success: true, message: 'Exam deleted successfully' });
   } catch (error) {
     next(error);
   }

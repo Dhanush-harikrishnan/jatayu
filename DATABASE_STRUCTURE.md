@@ -26,6 +26,56 @@ Stores every piece of telemetry and tracked violation across the system.
   - `Metadata` (Stringified JSON, *Optional*): Contains extra Rekognition responses (e.g. Bounding Boxes, Confidence scores).
   - `UserId`, `StudentName`, `ExamId`: Denormalized context attributes pushed down during logging.
 
+### C. `SecureGuardExams` Table
+Stores all exam configurations dynamically, removing the need for hardcoded memory maps.
+- **Partition Key (HASH)**: `examId` (String)
+- **Attributes**:
+  - `title` (String): Exam name.
+  - `description` (String): Details/instructions.
+  - `duration` (Number): Time limit in minutes.
+  - `startTime` (String): ISO-8601 start time.
+  - `endTime` (String): ISO-8601 end time.
+  - `enabled` (Boolean): Active status toggled by admin.
+  - `requireFullscreen` (Boolean): Enforce fullscreen proctoring.
+  - `sections` (List): Array of section objects.
+  - `createdBy` (String): Admin email.
+  - `createdAt` (String): ISO-8601 creation time.
+  - `updatedAt` (String): ISO-8601 last update time.
+- **Global Secondary Index (GSI)**: `EnabledStartTimeIndex`
+  - **Partition Key**: `enabled` (Stringified boolean, e.g., `"true"`)
+  - **Sort Key**: `startTime` (String)
+  - *Purpose*: Efficiently query active exams for students.
+
+### D. `SecureGuardQuestions` Table
+Stores all the questions associated with the dynamic exams, supporting multi-type queries.
+- **Partition Key (HASH)**: `questionId` (String)
+- **Attributes**:
+  - `examId` (String): Reference to the parent exam.
+  - `sectionType` (String): Type of question (`MCQ` | `CODING` | `APTITUDE` | `LOGICAL`).
+  - `order` (Number): Display order in the exam.
+  - `text` (String): The question prompt or markdown.
+  - `options` (List): Used for `MCQ` / `APTITUDE` / `LOGICAL`.
+  - `correctAnswer` (String | Number): The correct index or value.
+  - `difficulty` (String): `easy` | `medium` | `hard`.
+  - `points` (Number): How many points this question is worth.
+  - `codingConfig` (Map): Configuration for `CODING` questions (`language`, `starterCode`, `testCases`, `timeLimit`).
+- **Global Secondary Index (GSI)**: `ExamIdIndex`
+  - **Partition Key**: `examId` (String)
+  - *Purpose*: Efficiently fetch all questions for a specific exam.
+
+### E. `SecureGuardSubmissions` Table
+Stores students' completed exam submissions, containing their answers, automatically calculated scores, and completion metadata.
+- **Partition Key (HASH)**: `submissionId` (String)
+- **Attributes**:
+  - `sessionId` (String): Proctored session reference.
+  - `examId` (String): Reference to the parent exam.
+  - `studentId` (String): Reference to the student's email/ID.
+  - `answers` (Map): Dictionary of `questionId` -> `answerValue`.
+  - `score` (Number): The automatically calculated aggregate score of non-coding questions.
+  - `totalPoints` (Number): Total possible points for non-coding sections.
+  - `submittedAt` (String): ISO-8601 submission time.
+  - `autoSubmitted` (Boolean): Flag representing if the exam forcibly submitted due to timer expiration.
+
 > ⚠️ **Technical Debt / Scaling Note**: 
 > At present, the Admin Dashboard retrieves "Active Sessions" and "Violations" by executing a `.ScanCommand()` on `ProctoringEvents` (see `dashboardController.ts`). For future optimization, we should either add a **Global Secondary Index (GSI)** to `ProctoringEvents` on `SessionId` (for fast querying) OR create a dedicated `ProctoringSessions` table. 
 

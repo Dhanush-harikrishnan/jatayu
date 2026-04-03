@@ -30,8 +30,10 @@ export const config = {
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
     s3Bucket: process.env.AWS_S3_BUCKET || '',
     dynamoDbTableName: process.env.DYNAMODB_TABLE_NAME || 'ProctoringEvents',
-    sesSourceEmail: process.env.AWS_SES_SOURCE_EMAIL || ''
+    sesSourceEmail: process.env.AWS_SES_SOURCE_EMAIL || '',
+    rekognitionRpsLimit: parseInt(process.env.REKOGNITION_RPS_LIMIT || '5', 10),
   },
+  examDurationMinutes: parseInt(process.env.EXAM_DURATION_MINUTES || '120', 10),
   thresholds: {
     rekognitionConfidence: parseFloat(process.env.REKOGNITION_CONFIDENCE_THRESHOLD || '70.0'),
     isolationForest: parseFloat(process.env.ISOLATION_FOREST_THRESHOLD || '-0.5'),
@@ -39,5 +41,6 @@ export const config = {
     facialOrientation: parseFloat(process.env.FACIAL_ORIENTATION_THRESHOLD || '20'),
     // Telemetry websocket frames can be frequent; rate-limit evidence uploads to keep costs bounded.
     evidenceUploadIntervalMs: parseInt(process.env.EVIDENCE_UPLOAD_INTERVAL_MS || '5000', 10),
+    keystrokeBaselineCount: parseInt(process.env.KEYSTROKE_BASELINE_COUNT || '50', 10),
   }
 };

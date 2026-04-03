@@ -4,7 +4,7 @@ import { io } from '../socket';
 import { awsService } from './awsService';
 
 export interface TelemetryEvent {
-  type: 'LAPTOP_FRAME' | 'MOBILE_FRAME' | 'KEYSTROKE' | 'TRANSCRIPT' | 'GYRO_MOTION' | 'PHONE_DETECTED';
+  type: 'LAPTOP_FRAME' | 'MOBILE_FRAME' | 'KEYSTROKE' | 'TRANSCRIPT' | 'GYRO_MOTION' | 'PHONE_DETECTED' | 'BOOK_DETECTED' | 'TAB_SWITCH' | 'COPY_PASTE';
   timestamp: number;
   data: any;
   // Optional reference to an evidence image already stored in S3.
@@ -24,6 +24,7 @@ export class CorrelationEngine {
   // Cooldown map: violationType -> last triggered epoch ms
   private violationCooldowns = new Map<string, number>();
   private readonly COOLDOWN_MS = 8000; // min 8 s between same violation type
+  private cleanupInterval: NodeJS.Timeout;
 
   private constructor(
     sessionId: string,
@@ -32,7 +33,7 @@ export class CorrelationEngine {
     this.sessionId = sessionId;
     this.context = context;
     // Periodically clean up old events
-    setInterval(() => this.cleanOldEvents(), 1000);
+    this.cleanupInterval = setInterval(() => this.cleanOldEvents(), 1000);
   }
 
   public static getInstance(
@@ -47,6 +48,17 @@ export class CorrelationEngine {
       existing.context = { ...(existing.context || {}), ...context };
     }
     return this.instances.get(sessionId)!;
+  }
+
+  public static destroyInstance(sessionId: string) {
+    if (this.instances.has(sessionId)) {
+      // Clean up the timer to prevent memory leaks
+      const instance = this.instances.get(sessionId)!;
+      if (instance.cleanupInterval) {
+        clearInterval(instance.cleanupInterval);
+      }
+      this.instances.delete(sessionId);
+    }
   }
 
   public static removeInstance(sessionId: string) {
@@ -163,6 +175,18 @@ export class CorrelationEngine {
     // Rule I: MULTIPLE_PERSONS_DETECTED_MOBILE (from mobile camera)
     if (latestMobileFrame && (latestMobileFrame.data.multiplePersonsDetected || false)) {
       this.triggerCriticalViolation('MULTIPLE_PERSONS_DETECTED_MOBILE');
+    }
+
+    // Rule J: TAB_SWITCH (visibilitychange)
+    const tabSwitchEvents = windowEvents.filter(e => e.type === 'TAB_SWITCH');
+    if (tabSwitchEvents.length > 0) {
+      this.triggerCriticalViolation('TAB_SWITCH');
+    }
+
+    // Rule K: COPY_PASTE (clipboard usage)
+    const copyPasteEvents = windowEvents.filter(e => e.type === 'COPY_PASTE');
+    if (copyPasteEvents.length > 0) {
+      this.triggerCriticalViolation('COPY_PASTE');
     }
   }
 

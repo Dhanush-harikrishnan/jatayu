@@ -8,6 +8,7 @@ import {
 	sendAdminExamNotification,
 	createCustomExam,
 	terminateSession,
+	getViolationsBySession,
 } from '../controllers/dashboardController';
 import { authenticate, requireRole } from '../middlewares/authMiddleware';
 
@@ -18,6 +19,7 @@ router.use(authenticate);
 
 router.get('/admin/students', requireRole(['admin']), getAdminStudents);
 router.get('/admin/violations', requireRole(['admin']), getAdminViolations);
+router.get('/violations/:sessionId', getViolationsBySession);
 router.get('/admin/exams', requireRole(['admin']), getAdminExams);
 router.post('/admin/exams', requireRole(['admin']), createCustomExam);
 router.patch('/admin/exams/:examId/settings', requireRole(['admin']), updateAdminExamSettings);
