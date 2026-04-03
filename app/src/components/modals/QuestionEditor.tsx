@@ -26,8 +26,56 @@ interface Props {
   onRemove: () => void;
 }
 
+const STARTER_TEMPLATES: Record<string, string> = {
+  javascript: 'function main() {\n  \n}',
+  python: 'def main():\n  pass',
+  java: 'public static void main(String[] args) {\n  \n}',
+  cpp: 'int main() {\n  return 0;\n}'
+};
+
+const getDefaultPoints = (type: string) => {
+  switch (type) {
+    case 'MCQ': return 2;
+    case 'APTITUDE': return 3;
+    case 'LOGICAL': return 3;
+    case 'CODING': return 10;
+    default: return 1;
+  }
+};
+
 export function QuestionEditor({ question, onChange, onRemove }: Props) {
   const isCoding = question.sectionType === 'CODING';
+
+  // Step 5: Cap input between 1-100
+  const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = parseInt(e.target.value) || 1;
+    if (val < 1) val = 1;
+    if (val > 100) val = 100;
+    onChange({ ...question, points: val });
+  };
+
+  const handleSectionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value as 'MCQ' | 'CODING' | 'APTITUDE' | 'LOGICAL';
+    const newPoints = getDefaultPoints(newType);
+    let newCodingConfig = question.codingConfig;
+    
+    // Step 6: Better default testcase when switching to CODING
+    if (newType === 'CODING' && !newCodingConfig) {
+      newCodingConfig = {
+        language: 'javascript',
+        timeLimit: 2000,
+        starterCode: STARTER_TEMPLATES['javascript'],
+        testCases: [{ input: '5', expectedOutput: '25' }]
+      };
+    }
+    
+    onChange({ 
+      ...question, 
+      sectionType: newType,
+      points: newPoints,
+      codingConfig: newCodingConfig
+    });
+  };
 
   return (
     <div className="rounded-lg border border-cyan/20 bg-cyan/5 p-4 mb-4 relative text-left">
@@ -46,7 +94,7 @@ export function QuestionEditor({ question, onChange, onRemove }: Props) {
             <select
               title="Section Type"
               value={question.sectionType}
-              onChange={e => onChange({ ...question, sectionType: e.target.value as any })}
+              onChange={handleSectionTypeChange}
               className="w-full rounded-md border border-cyan/20 bg-black/50 px-3 py-2 text-sm text-white focus:border-cyan focus:outline-none focus:ring-1 focus:ring-cyan"
             >
               <option value="MCQ">MCQ</option>
@@ -71,9 +119,9 @@ export function QuestionEditor({ question, onChange, onRemove }: Props) {
           <div className="space-y-2">
             <Label className="text-xs text-cyan pr-2">Points</Label>
             <Input 
-              type="number" min="1"
+              type="number" min="1" max="100"
               value={question.points}
-              onChange={e => onChange({ ...question, points: parseInt(e.target.value) || 1 })}
+              onChange={handlePointsChange}
               placeholder="e.g. 5"
             />
           </div>
@@ -123,8 +171,17 @@ export function QuestionEditor({ question, onChange, onRemove }: Props) {
                   title="Language"
                   value={question.codingConfig?.language || 'javascript'}
                   onChange={e => {
+                    const newLang = e.target.value;
+                    const prevLang = question.codingConfig?.language || 'javascript';
                     const cfg = question.codingConfig || { language: 'javascript', timeLimit: 2000, starterCode: '', testCases: [] };
-                    onChange({ ...question, codingConfig: { ...cfg, language: e.target.value } });
+                    
+                    // Step 4: Auto-fill starter code if empty or matches previous language default
+                    let updatedCode = cfg.starterCode;
+                    if (!updatedCode || updatedCode.trim() === '' || updatedCode === STARTER_TEMPLATES[prevLang]) {
+                      updatedCode = STARTER_TEMPLATES[newLang];
+                    }
+                    
+                    onChange({ ...question, codingConfig: { ...cfg, language: newLang, starterCode: updatedCode } });
                   }}
                   className="w-full rounded-md border border-cyan/20 bg-black/50 px-3 py-2 text-sm text-white focus:border-cyan focus:outline-none focus:ring-1 focus:ring-cyan"
                 >
@@ -162,24 +219,27 @@ export function QuestionEditor({ question, onChange, onRemove }: Props) {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-cyan">Test Cases</Label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const cfg = question.codingConfig || { language: 'javascript', timeLimit: 2000, starterCode: '', testCases: [] };
-                    onChange({
-                      ...question,
-                      codingConfig: {
-                        ...cfg,
-                        testCases: [...cfg.testCases, { input: '', expectedOutput: '' }]
-                      }
-                    });
-                  }}
-                  className="flex items-center gap-1 text-xs text-cyan hover:text-cyan/80 bg-cyan/10 px-2 py-1 rounded"
-                >
-                  <Plus className="h-3 w-3" /> Add Test Case
-                </button>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-cyan">Test Cases</Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cfg = question.codingConfig || { language: 'javascript', timeLimit: 2000, starterCode: '', testCases: [] };
+                      onChange({
+                        ...question,
+                        codingConfig: {
+                          ...cfg,
+                          testCases: [...cfg.testCases, { input: '', expectedOutput: '' }]
+                        }
+                      });
+                    }}
+                    className="flex items-center gap-1 text-xs text-cyan hover:text-cyan/80 bg-cyan/10 px-2 py-1 rounded"
+                  >
+                    <Plus className="h-3 w-3" /> Add Test Case
+                  </button>
+                </div>
+                <span className="text-[10px] text-cyan/70">Format: Standard input/output as strings. Ensure leading/trailing spaces are matched exactly.</span>
               </div>
               
               {(question.codingConfig?.testCases || []).map((tc, idx) => (

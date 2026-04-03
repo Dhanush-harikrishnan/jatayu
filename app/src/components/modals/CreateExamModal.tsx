@@ -60,14 +60,14 @@ export function CreateExamModal({ isOpen, onClose, onExamCreated }: CreateExamMo
       sectionType: type,
       text: '',
       difficulty: 'medium',
-      points: 1,
+      points: type === 'CODING' ? 10 : type === 'MCQ' ? 2 : 3,
       options: ['MCQ', 'APTITUDE', 'LOGICAL'].includes(type) ? ['', '', '', ''] : [],
       correctAnswer: ['MCQ', 'APTITUDE', 'LOGICAL'].includes(type) ? 0 : '',
       codingConfig: type === 'CODING' ? {
         language: 'javascript',
-        starterCode: '',
-        testCases: [{ input: '', expectedOutput: '' }],
-        timeLimit: 1000
+        starterCode: 'function main() {\n  \n}',
+        testCases: [{ input: '5', expectedOutput: '25' }],
+        timeLimit: 2000
       } : undefined
     };
     setQuestions([...questions, newQ]);
@@ -75,6 +75,52 @@ export function CreateExamModal({ isOpen, onClose, onExamCreated }: CreateExamMo
 
   const handleSubmit = async () => {
     setError(null);
+    
+    // Step 7: Validation
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.text.trim()) {
+        setError(`Question ${i + 1} (${q.sectionType}) is missing question text.`);
+        return;
+      }
+      if (q.points < 1 || q.points > 100) {
+        setError(`Question ${i + 1} has invalid points (must be 1-100).`);
+        return;
+      }
+      
+      if (['MCQ', 'APTITUDE', 'LOGICAL'].includes(q.sectionType)) {
+        const validOptions = q.options.filter(opt => opt.trim() !== '');
+        if (validOptions.length < 2) {
+          setError(`Question ${i + 1} must have at least 2 non-empty options.`);
+          return;
+        }
+        if (typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || q.correctAnswer >= q.options.length || !q.options[q.correctAnswer].trim()) {
+          setError(`Question ${i + 1} must have a valid selected correct answer that is not empty.`);
+          return;
+        }
+      } else if (q.sectionType === 'CODING') {
+        if (!q.codingConfig) {
+          setError(`Question ${i + 1} is missing coding configuration.`);
+          return;
+        }
+        const validTestcases = q.codingConfig.testCases.filter(tc => tc.input.trim() !== '' && tc.expectedOutput.trim() !== '');
+        if (validTestcases.length === 0) {
+          setError(`Question ${i + 1} must have at least 1 test case with both input and expected output.`);
+          return;
+        }
+        // Coding check: warn if syntax mismatches language (simplified check)
+        const lang = q.codingConfig.language;
+        const code = q.codingConfig.starterCode;
+        if (lang === 'python' && code.includes('function ')) {
+          setError(`Question ${i + 1} starter code uses 'function' but language is Python (use 'def').`);
+          return;
+        } else if (lang === 'javascript' && code.includes('def ')) {
+          setError(`Question ${i + 1} starter code uses 'def' but language is JavaScript (use 'function').`);
+          return;
+        }
+      }
+    }
+
     setLoading(true);
 
     try {

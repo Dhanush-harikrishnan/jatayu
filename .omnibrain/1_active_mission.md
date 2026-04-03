@@ -54,22 +54,22 @@
 ✅ Step 3: CreateExamModal.tsx - Fix payload key
 - Ensure POST body sends `id: examId` alongside `examId` for backward compat
 
-### Phase B: Validation and Smart Defaults (Steps 4-7)
+### Phase B: Validation and Smart Defaults (Steps 4-7) - ✅ COMPLETED
 
-Step 4: QuestionEditor.tsx - Dynamic starter code placeholder
+✅ Step 4: QuestionEditor.tsx - Dynamic starter code placeholder
 - Switch placeholder based on selected language
 - JS: `function main() { }`, Python: `def main():`, Java: `public static void main`, C++: `int main() { }`
 - Auto-fill starter code template when language changes and code is empty
 
-Step 5: QuestionEditor.tsx - Smart point defaults per type
+✅ Step 5: QuestionEditor.tsx - Smart point defaults per type
 - When sectionType changes, auto-set: MCQ=2, Aptitude=3, Logical=3, Coding=10
 - Cap input between 1-100
 
-Step 6: QuestionEditor.tsx - Better default test case
+✅ Step 6: QuestionEditor.tsx - Better default test case
 - Pre-populate first test case with `{ input: '5', expectedOutput: '25' }`
 - Show helper text explaining test case format
 
-Step 7: CreateExamModal.tsx - Submit-time validation
+✅ Step 7: CreateExamModal.tsx - Submit-time validation
 - Every question must have non-empty text
 - MCQ/Aptitude/Logical: at least 2 non-empty options, correctAnswer within bounds
 - Coding: at least 1 test case with non-empty input AND expectedOutput

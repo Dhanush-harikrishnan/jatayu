@@ -41,3 +41,7 @@ px tsc --noEmit\ for type check validation from the project root crashed due to 
 10. **400 Bad Request on Admin Payload Initialization:**
    - *Issue*: The backend restricted parsing to exactly eq.body.id, while the frontend modal provided examId triggering widespread 400 failures upon all new exam generations.
    - *Resolution*: Altered Express controller payload processing in dashboardController.ts to implement backwards-compatible nullish coalescing operators (eq.body.id || req.body.examId) and automatically bounded minimum duration and termination time parameters natively.
+
+11. **Form Validation & Smart Defaults:**
+   - *Issue*: QuestionEditor.tsx and CreateExamModal.tsx lacked appropriate defaults and structural validations, allowing the creation of questions without text, mismatched test cases, and poor syntax mismatches (e.g. unction in python).
+   - *Resolution*: Implemented dynamic starter code, conditional point constraints based on question type, and submit-time validation on the frontend ensuring robust payload before hitting the backend endpoint.
