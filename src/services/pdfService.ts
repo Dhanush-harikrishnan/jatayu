@@ -4,8 +4,11 @@ export interface ReportData {
   examId: string;
   sessionId: string;
   studentEmail: string;
+  studentName?: string;
   score?: number;
   totalPoints?: number;
+  trustScore?: number;
+  aiSummary?: string;
   violations: {
     type: string;
     timestamp: string;
@@ -102,12 +105,16 @@ export const generatePdfReport = async (data: ReportData): Promise<Buffer> => {
       const details: [string, string][] = [
         ['Exam ID', data.examId],
         ['Session ID', data.sessionId],
-        ['Student', data.studentEmail],
+        ['Student', data.studentName || data.studentEmail],
+        ['Email', data.studentEmail],
         ['Report Date', now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
         ['Report Time', now.toLocaleTimeString('en-IN')],
       ];
       if (data.score !== undefined) {
         details.push(['Score', `${data.score} / ${data.totalPoints || '?'}`]);
+      }
+      if (data.trustScore !== undefined) {
+        details.push(['Trust Score', `${Math.round(data.trustScore)}/100`]);
       }
       
       details.forEach(([label, value]) => {
@@ -115,10 +122,25 @@ export const generatePdfReport = async (data: ReportData): Promise<Buffer> => {
         doc.font('Helvetica').fill([220, 230, 255]).fontSize(9).text(' ' + value);
       });
 
-      doc.moveDown();
+      doc.moveDown(1.5);
+
+      // ──────────────── AI SUMMARY (Sprint 2 Feature) ────────────────
+      if (data.aiSummary) {
+        doc.fill([0, 240, 255]).fontSize(13).font('Helvetica-Bold').text('AI Proctoring Summary');
+        doc.moveDown(0.3);
+        drawHLine(doc, [0, 100, 120]);
+        doc.moveDown(0.5);
+
+        // Add a soft background for the AI box
+        doc.rect(50, doc.y, doc.page.width - 100, 75).fill([20, 30, 50]);
+        
+        doc.fill([200, 220, 255]).fontSize(10).font('Helvetica-Oblique').text(data.aiSummary, 60, doc.y - 65, { width: doc.page.width - 120, lineGap: 3 });
+        
+        doc.y += 85; 
+      }
 
       // ──────────────── SUMMARY PANEL ────────────────
-      doc.fill([0, 240, 255]).fontSize(13).font('Helvetica-Bold').text('Violation Summary');
+      doc.fill([0, 240, 255]).fontSize(13).font('Helvetica-Bold').text('Violation Breakdown');
       doc.moveDown(0.3);
       drawHLine(doc, [0, 100, 120]);
 

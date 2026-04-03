@@ -67,12 +67,20 @@ export function AdminDashboard() {
       ));
     };
 
+    const handleAiSummary = (data: { sessionId: string; aiSummary: string }) => {
+      setStudents(prev => prev.map(s => 
+        s.sessionId === data.sessionId ? { ...s, aiSummary: data.aiSummary } : s
+      ));
+    };
+
     socket.on('admin_mobile_feed_frame', handleFrame);
     socket.on('trust_score_update', handleTrustScoreUpdate);
+    socket.on('ai_summary_ready', handleAiSummary);
     
     return () => {
       socket.off('admin_mobile_feed_frame', handleFrame);
       socket.off('trust_score_update', handleTrustScoreUpdate);
+      socket.off('ai_summary_ready', handleAiSummary);
     };
   }, [socket]);
 

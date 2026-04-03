@@ -263,4 +263,22 @@ export const registerTelemetryHandlers = (io: Server, socket: Socket, roomName: 
       data: { action: data.action }
     });
   });
+
+  // Anti-Cheat (VM, RDP, DevTools)
+  socket.on('anti_cheat', (data: { type: 'VM_DETECTED' | 'REMOTE_DESKTOP_DETECTED' | 'DEVTOOLS_DETECTED', details: string, timestamp: number }) => {
+    engine.addEvent({
+      type: data.type,
+      timestamp: data.timestamp,
+      data: { details: data.details }
+    });
+  });
+
+  // Voice Activity (Web Audio API)
+  socket.on('voice_detected', (data: { volume: number, timestamp: number }) => {
+    engine.addEvent({
+      type: 'VOICE_DETECTED',
+      timestamp: data.timestamp,
+      data: { volume: data.volume }
+    });
+  });
 };

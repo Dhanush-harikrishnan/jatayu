@@ -1,10 +1,11 @@
-import { config } from '../config/env';
+﻿import { config } from '../config/env';
 import { logger } from '../logger';
 import { io } from '../socket';
 import { awsService } from './awsService';
+import { TrustScoreEngine } from './trustScoreEngine';
 
 export interface TelemetryEvent {
-  type: 'LAPTOP_FRAME' | 'MOBILE_FRAME' | 'KEYSTROKE' | 'TRANSCRIPT' | 'GYRO_MOTION' | 'PHONE_DETECTED' | 'BOOK_DETECTED' | 'TAB_SWITCH' | 'COPY_PASTE';
+  type: 'LAPTOP_FRAME' | 'MOBILE_FRAME' | 'KEYSTROKE' | 'TRANSCRIPT' | 'GYRO_MOTION' | 'PHONE_DETECTED' | 'BOOK_DETECTED' | 'TAB_SWITCH' | 'COPY_PASTE' | 'VM_DETECTED' | 'REMOTE_DESKTOP_DETECTED' | 'DEVTOOLS_DETECTED' | 'VOICE_DETECTED';
   timestamp: number;
   data: any;
   // Optional reference to an evidence image already stored in S3.
@@ -188,17 +189,41 @@ export class CorrelationEngine {
     if (copyPasteEvents.length > 0) {
       this.triggerCriticalViolation('COPY_PASTE');
     }
-  }
 
-  private async triggerCriticalViolation(violationType: string) {
-    // Cooldown check — avoid spamming the same violation type
-    const lastTriggered = this.violationCooldowns.get(violationType) ?? 0;
-    if (Date.now() - lastTriggered < this.COOLDOWN_MS) return;
-    this.violationCooldowns.set(violationType, Date.now());
+      // Rule L: VM_DETECTED (Anti-Cheat)
+      const vmEvents = windowEvents.filter(e => e.type === 'VM_DETECTED');
+      if (vmEvents.length > 0) {
+        this.triggerCriticalViolation('VM_DETECTED');
+      }
 
-    logger.warn(`[Violation] ${violationType} in session ${this.sessionId}`);
+      // Rule M: REMOTE_DESKTOP_DETECTED (Anti-Cheat)
+      const rdpEvents = windowEvents.filter(e => e.type === 'REMOTE_DESKTOP_DETECTED');
+      if (rdpEvents.length > 0) {
+        this.triggerCriticalViolation('REMOTE_DESKTOP_DETECTED');
+      }
 
-    const isoTimestamp = new Date().toISOString();
+      // Rule N: DEVTOOLS_DETECTED (Anti-Cheat)
+      const devtoolsEvents = windowEvents.filter(e => e.type === 'DEVTOOLS_DETECTED');
+      if (devtoolsEvents.length > 0) {
+        this.triggerCriticalViolation('DEVTOOLS_DETECTED');
+      }
+
+      // Rule O: VOICE_DETECTED (Web Audio API)
+      const voiceEvents = windowEvents.filter(e => e.type === 'VOICE_DETECTED');
+      if (voiceEvents.length > 0) {
+        this.triggerCriticalViolation('VOICE_DETECTED');
+      }
+    }
+
+    private async triggerCriticalViolation(violationType: string) {
+      // Cooldown check — avoid spamming the same violation type
+      const lastTriggered = this.violationCooldowns.get(violationType) ?? 0;
+      if (Date.now() - lastTriggered < this.COOLDOWN_MS) return;
+      this.violationCooldowns.set(violationType, Date.now());
+
+      logger.warn(`[Violation] ${violationType} in session ${this.sessionId}`);
+
+      const isoTimestamp = new Date().toISOString();
     // Use the last known evidence key; fall back to a placeholder so the event still persists.
     // Select evidence key: mobile violations should prefer mobile snapshots
     const isMobileViolation = ['PHONE_DETECTED', 'BOOK_DETECTED', 'PHONE_MOVEMENT_DETECTED', 'MULTIPLE_LAPTOPS_DETECTED', 'MULTIPLE_PERSONS_DETECTED_MOBILE'].includes(violationType);
@@ -224,6 +249,10 @@ export class CorrelationEngine {
     } catch (e) {
       logger.error('DynamoDB Logging failed:', e);
     }
+    
+    // Update Trust Score Engine
+    const trustEngine = TrustScoreEngine.getInstance(this.sessionId);
+    const newScore = trustEngine.processEvent({ type: violationType });
 
     // Emit to admin room
     if (io) {
@@ -232,6 +261,12 @@ export class CorrelationEngine {
         violationType,
         timestamp: isoTimestamp,
         s3Key
+      });
+      
+      io.to('admin_room').emit('trust_score_update', {
+        sessionId: this.sessionId,
+        score: newScore,
+        timestamp: isoTimestamp
       });
 
       // Also emit to the student's session room so the primary screen shows the alert
@@ -248,3 +283,4 @@ export class CorrelationEngine {
     this.events = [];
   }
 }
+

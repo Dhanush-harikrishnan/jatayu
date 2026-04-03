@@ -192,7 +192,19 @@ export function ViolationModal({ isOpen, onClose, student, violations, onTermina
             </div>
 
             {/* Content */}
-            <div className="p-6 overflow-auto max-h-[calc(90vh-180px)]">
+            <div className="p-6 overflow-auto max-h-[calc(90vh-180px)]">              
+                {/* AI Summary Banner (if present) - Visible in all tabs for context */}
+                {student.aiSummary && (
+                  <div className="mb-6 glass-card p-4 border border-cyan/20 bg-cyan/5">
+                    <div className="flex items-start gap-3">
+                      <Brain strokeWidth={1} className="h-5 w-5 text-cyan shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-medium text-white mb-1">AI Proctoring Summary</h4>
+                        <p className="text-sm text-white/80 leading-relaxed">{student.aiSummary}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               {activeTab === 'overview' && (
                 <div className="space-y-6">
                   {/* Live Feeds */}

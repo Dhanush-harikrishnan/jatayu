@@ -377,6 +377,8 @@ export const analyzeLiveFrame = async (req: Request, res: Response, next: NextFu
 import { generatePdfReport } from '../services/pdfService';
 import { io } from '../socket';
 import { CorrelationEngine } from '../services/correlationEngine';
+import { generateAIReportSummary } from '../services/aiReportGenerator';
+import { TrustScoreEngine } from '../services/trustScoreEngine';
 
 export const submitExam = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -459,53 +461,97 @@ export const submitExam = async (req: Request, res: Response, next: NextFunction
         type: v.violationType || 'unknown',
         timestamp: v.timestamp || timestamp,
         evidence: v.evidenceKey,
-        metadata: v.metadata,
-      }));
+          severity: v.violationType === 'PHONE_DETECTED' || v.violationType === 'MULTIPLE_PERSONS_DETECTED' ? 'high' : 'medium',
+          metadata: v.metadata,
+        }));
 
-      const violationsWithEvidence = await Promise.all(
-        sourceViolations.map(async (v: any) => {
-          const evidenceKey = normalizeEvidenceKey(v.evidence);
-          let evidenceImage: Buffer | undefined;
-          if (evidenceKey) {
-            try {
-              evidenceImage = await awsService.getEvidenceObjectBytes(evidenceKey);
-            } catch (err) {
-              logger.warn(`Unable to fetch evidence image for report: ${evidenceKey}`);
-            }
+        let aiSummary;
+        let testDuration = 60; // default
+        try {
+          const trustScores = TrustScoreEngine.getInstance(sessionId);
+          // Calculate active session duration roughly based on start time in violations or default
+          testDuration = Math.max(1, Math.round((new Date(timestamp).getTime() - new Date(dbViolations[0]?.timestamp || Date.now() - 3600000).getTime()) / 60000));
+          
+          aiSummary = await generateAIReportSummary({
+             studentName: name,
+             durationMinutes: testDuration,
+             finalTrustScore: trustScores.getScore ? trustScores.getScore() : 100,
+             violations: sourceViolations.map(v => ({
+               type: v.type,
+               timestamp: v.timestamp,
+               severity: v.severity as 'low' | 'medium' | 'high' | 'critical' | undefined
+             }))
+          });
+          
+          // Optionally save the AI summary to DB
+          await awsService.logViolationEvent(
+            sessionId,
+            timestamp,
+            'AI_SUMMARY_GENERATED',
+            '',
+            { aiSummary },
+            { userId: email, studentName: name, examId }
+          );
+
+          if (io) {
+            io.to('admin_room').emit('ai_summary_ready', {
+              sessionId,
+              aiSummary,
+              timestamp
+            });
           }
+        } catch(e) {
+          logger.error('Failed to generate AI summary:', e);
+        }
 
-          return {
-            type: v.type,
-            timestamp: v.timestamp,
-            evidence: evidenceKey || v.evidence,
-            metadata: v.metadata,
-            evidenceImage,
-          };
-        })
-      );
+        const violationsWithEvidence = await Promise.all(
+          sourceViolations.map(async (v: any) => {
+            const evidenceKey = normalizeEvidenceKey(v.evidence);
+            let evidenceImage: Buffer | undefined;
+            if (evidenceKey) {
+              try {
+                evidenceImage = await awsService.getEvidenceObjectBytes(evidenceKey);
+              } catch (err) {
+                logger.warn(`Unable to fetch evidence image for report: ${evidenceKey}`);
+              }
+            }
+  
+            return {
+              type: v.type,
+              timestamp: v.timestamp,
+              evidence: evidenceKey || v.evidence,
+              metadata: v.metadata,
+              evidenceImage,
+            };
+          })
+        );
+  
+        const trustScores = TrustScoreEngine.getInstance(sessionId);
+        const pdfBuffer = await generatePdfReport({
+          examId,
+          sessionId,
+          studentEmail: email,
+          studentName: name,
+          score,
+          totalPoints,
+          trustScore: trustScores.getScore ? trustScores.getScore() : 100,
+          aiSummary,
+          violations: violationsWithEvidence,
+        });
 
-      const pdfBuffer = await generatePdfReport({
-        examId,
-        sessionId,
-        studentEmail: email,
-        score,
-        totalPoints,
-        violations: violationsWithEvidence,
-      });
+        const adminEmail = process.env.ADMIN_EMAIL || config.aws.sesSourceEmail || email;
+        await awsService.sendPdfReportEmail(
+          adminEmail,
+          pdfBuffer,
+          `Exam Report - ${examId} - ${email}`,
+          `Please find attached the proctoring report for session ${sessionId}.`
+        );
+        logger.info(`Report generated and email initiated for session ${sessionId}`);
+      } catch (err: any) {
+        logger.error(`Error generating/sending report for session ${sessionId}:`, err);
+      }
 
-      const adminEmail = process.env.ADMIN_EMAIL || config.aws.sesSourceEmail || email;
-      await awsService.sendPdfReportEmail(
-        adminEmail,
-        pdfBuffer,
-        `Exam Report - ${examId} - ${email}`,
-        `Please find attached the proctoring report for session ${sessionId}.`
-      );
-      logger.info(`Report generated and email initiated for session ${sessionId}`);
-    } catch (err: any) {
-      logger.error(`Error generating/sending report for session ${sessionId}:`, err);
-    }
-
-    return res.json({ success: true, message: 'Exam submitted successfully' });
+      return res.json({ success: true, message: 'Exam submitted successfully' });
 
   } catch (error) {
     next(error);

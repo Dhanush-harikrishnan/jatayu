@@ -15,6 +15,7 @@
     "@aws-sdk/client-ses": "^3.500.0",
     "@aws-sdk/s3-request-presigner": "^3.1017.0",
     "@aws-sdk/util-dynamodb": "^3.996.2",
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
