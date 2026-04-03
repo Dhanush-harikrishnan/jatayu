@@ -39,8 +39,7 @@ export function LiveProctoring({ examId = 'EXAM-101' }: LiveProctoringProps) {
 
   useEffect(() => {
     fetchApi(`/api/questions/${examId}`)
-      .then(res => res.json())
-      .then(data => {
+      .then((data: any) => {
         setQuestions(Array.isArray(data) && data.length > 0 ? data : []);
         setIsLoadingQuestions(false);
       })

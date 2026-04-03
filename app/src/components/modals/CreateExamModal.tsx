@@ -82,6 +82,7 @@ export function CreateExamModal({ isOpen, onClose, onExamCreated }: CreateExamMo
       const examId = `EXAM-${generateId().toUpperCase()}`;
       const examPayload = {
         ...examData,
+        id: examId,
         examId,
         startTime: new Date(examData.startTime).toISOString(),
         endTime: new Date(examData.endTime).toISOString(),

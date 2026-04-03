@@ -446,25 +446,37 @@ export const getStudentExams = async (req: Request, res: Response, next: NextFun
 
 export const createCustomExam = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id, title, description, duration, totalQuestions, instructions, requireFullscreen } = req.body;
+    const payloadId = req.body.id || req.body.examId;
+    const { title, description, duration, totalQuestions, instructions, requireFullscreen } = req.body;
 
-    if (!id || !title || !duration) {
-      return res.status(400).json({ success: false, message: 'ID, title, and duration are required' });
+    if (!payloadId || !title || !duration) {
+      return res.status(400).json({ success: false, message: 'ID (or examId), title, and duration are required' });
     }
 
-    const existingId = await awsService.getExam(id);
+    const safeDuration = Math.max(10, Math.min(480, Number(duration)));
+
+    const startTime = req.body.startTime || new Date().toISOString();
+    let endTime = req.body.endTime;
+    if (!endTime) {
+      const d = new Date(startTime);
+      d.setMinutes(d.getMinutes() + safeDuration);
+      endTime = d.toISOString();
+    }
+
+    const existingId = await awsService.getExam(payloadId);
     if (existingId) {
-      return res.status(409).json({ success: false, message: `Exam with ID ${id} already exists` });
+      return res.status(409).json({ success: false, message: `Exam with ID ${payloadId} already exists` });
     }
 
     const newConfig: any = {
-      examId: id,
+      examId: payloadId,
       title,
       description: description || '',
-      duration: Number(duration),
+      duration: safeDuration,
       totalQuestions: Number(totalQuestions) || 10,
       instructions: Array.isArray(instructions) ? instructions : (instructions ? [instructions] : []),
-      startTime: req.body.startTime || new Date().toISOString(),
+      startTime,
+      endTime,
       enabled: req.body.enabled !== false,
       requireFullscreen: requireFullscreen !== false,
       sections: req.body.sections || []

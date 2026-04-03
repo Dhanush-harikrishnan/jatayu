@@ -1,48 +1,107 @@
-# 1. ACTIVE MISSION — Dynamic Exam Management System
-- **Current State (70% Built):**
-  - Exams are hardcoded in-memory `examConfigs` Map inside `dashboardController.ts` (7 static exams).
-  - Questions are hardcoded per-exam in `QUESTION_BANK` inside `LiveProctoring.tsx` (MCQ only).
-  - Admin can toggle enable/disable, set duration/startTime, and create new exams via `CreateExamModal` — but all stored in volatile server memory (lost on restart).
-  - No question types beyond MCQ. No coding editor. No aptitude/logical reasoning sections.
+# Active Mission - Fix Exam Creation Pipeline and Harden Dynamic Exam System
 
-- **Goal:** Persistent, dynamic exam CRUD with DynamoDB. Multi-section exams (Coding, Aptitude, Logical Reasoning). Admin scheduling UI with date/time picker. Student-facing dynamic question rendering.
+## Root Cause Analysis
+
+### BUG 1: 400 Bad Request on POST /dashboard/admin/exams
+- File: dashboardController.ts line 449
+- Cause: Backend destructures `req.body.id` but frontend sends `req.body.examId`
+- The controller checks `if (!id)` which is always true since the key is `examId`
+- Fix: Accept both `id` and `examId` from body
+
+### BUG 2: LiveProctoring questions never load (double-parse)
+- File: LiveProctoring.tsx line 41-42
+- Cause: `fetchApi()` already returns parsed JSON via `response.json()`.
+  Code then calls `.then(res => res.json())` on the already-parsed object.
+  `.json()` is not a function on a plain object, so it throws.
+- Fix: Remove the `.then(res => res.json())` chain
+
+### BUG 3: Starter code placeholder shows Python for all languages
+- File: QuestionEditor.tsx line 160
+- Cause: Hardcoded placeholder `def main():...` regardless of language selection
+- Fix: Make placeholder dynamic based on codingConfig.language
+
+### BUG 4: Default points inverted (MCQ=1, no guidance)
+- File: CreateExamModal.tsx line 63
+- Cause: All question types default to `points: 1` with no type-specific defaults
+- Fix: MCQ/Aptitude/Logical default to 2 points, Coding defaults to 10 points
+
+### BUG 5: Empty test cases on coding questions
+- File: CreateExamModal.tsx line 69
+- Cause: Default test case is `{ input: '', expectedOutput: '' }` with no validation
+- Fix: Pre-populate with example data, validate non-empty on submit
+
+### BUG 6: No submit-time validation for question content
+- File: CreateExamModal.tsx handleSubmit
+- Cause: Questions with empty text, empty options, or invalid correctAnswer index can be saved
+- Fix: Validate all fields before API call, show per-question error messages
 
 ---
 
-## Build Plan — 18 Steps
+## Build Plan - 12 Steps
 
-### Phase A — DynamoDB Exam Persistence (Steps 1–4)
-1. **New DynamoDB Table: `SecureGuardExams`** — PK: `examId` (S). Attributes: `title`, `description`, `duration` (N, minutes), `startTime` (S, ISO), `endTime` (S, ISO), `enabled` (BOOL), `requireFullscreen` (BOOL), `sections` (L — list of section objects), `createdBy` (S), `createdAt` (S), `updatedAt` (S). Add a GSI on `enabled` + `startTime` for efficient student queries. Document in `DATABASE_STRUCTURE.md`.
-2. **`awsService.ts` — Exam CRUD Methods** — Add `createExam`, `getExam`, `updateExam`, `deleteExam`, `listExams`, `listActiveExams` (query GSI where enabled=true and now is between startTime and endTime). All use DynamoDB SDK v3 with proper marshalling.
-3. **Migrate `dashboardController.ts`** — Remove the in-memory `examConfigs` Map. Rewrite `getAdminExams`, `getStudentExams`, `createCustomExam`, `updateAdminExamSettings` to call the new `awsService` exam CRUD methods. The `resolveExamStatus()` helper stays pure.
-4. **Migrate `examRoute.ts`** — Add `DELETE /:examId` route. Add `GET /:examId` route for fetching a single exam. Wire to new controller functions.
+### Phase A: Fix Critical Bugs (Steps 1-3) - ✅ COMPLETED
 
-### Phase B — Question Bank with Multi-Type Support (Steps 5–9)
-5. **New DynamoDB Table: `SecureGuardQuestions`** — PK: `questionId` (S). Attributes: `examId` (S, GSI), `sectionType` (S — `MCQ` | `CODING` | `APTITUDE` | `LOGICAL`), `order` (N), `text` (S), `options` (L, for MCQ/Aptitude/Logical), `correctAnswer` (N or S), `difficulty` (S — `easy` | `medium` | `hard`), `points` (N), `codingConfig` (M — `{ language, starterCode, testCases, timeLimit }` for coding questions). Add GSI on `examId` for batch fetch. Document in `DATABASE_STRUCTURE.md`.
-6. **`awsService.ts` — Question CRUD** — Add `createQuestion`, `batchCreateQuestions`, `getQuestionsByExamId`, `updateQuestion`, `deleteQuestion`. For `getQuestionsByExamId`, query the GSI and sort by `order`.
-7. **`questionController.ts` [NEW]** — `POST /api/questions/:examId` (bulk create), `GET /api/questions/:examId` (list by exam), `PUT /api/questions/:questionId`, `DELETE /api/questions/:questionId`. Admin-only for create/update/delete; student-authenticated for GET (strip `correctAnswer` from response).
-8. **`questionRoute.ts` [NEW]** — Wire the controller. Register in `app.ts` under `/api/questions`.
-9. **Remove Hardcoded Questions** — Delete the `QUESTION_BANK` object from `LiveProctoring.tsx`. Instead, fetch questions dynamically from `GET /api/questions/:examId` on component mount.
+✅ Step 1: dashboardController.ts - Fix createCustomExam
+- Accept both `id` and `examId` from req.body
+- Auto-compute endTime = startTime + duration if endTime is missing
+- Clamp duration to 10-480 range
 
-### Phase C — Admin Exam Builder UI (Steps 10–13)
-10. **Upgrade `CreateExamModal.tsx`** — Transform into a multi-step wizard:
-    - Step 1: Exam metadata (title, description, category tag).
-    - Step 2: Schedule (date picker for start/end, duration slider, timezone display).
-    - Step 3: Settings (fullscreen toggle, proctoring level, max attempts).
-    - Step 4: Sections — add section cards (MCQ, Coding, Aptitude, Logical). Each section is independently configurable with question count, time allocation, points.
-    - On submit, call `POST /api/dashboard/admin/exams` then per-section `POST /api/questions/:examId` with the question array.
-11. **Admin Question Editor Panel** — New component `QuestionEditor.tsx` embedded inside the CreateExamModal Step 4. Per question type:
-    - **MCQ / Aptitude / Logical:** Text, 4 options, correct answer radio, difficulty dropdown.
-    - **Coding:** Question text, language selector (Python/JS/Java/C++), starter code textarea, test cases array (input/expectedOutput pairs), time limit.
-    Add bulk import via JSON paste.
-12. **Admin Exam List View** — In `AdminDashboard.tsx`, replace the simple select dropdown with a sortable/filterable exam table. Columns: Title, Status (badge), Start Date, Duration, Sections, Actions (Edit/Delete/Duplicate). Click row → opens edit modal.
-13. **Admin Date/Time Scheduling** — Use Radix UI `Popover` + a lightweight date picker (or native `datetime-local` inputs already present). Add recurrence option (one-time / weekly). Show countdown-to-start on active exam cards.
+✅ Step 2: LiveProctoring.tsx - Fix double-parse
+- Change fetchApi call to use returned JSON directly
+- Remove the `.then(res => res.json())` chain
+- Handle empty/error responses gracefully
 
-### Phase D — Student Exam Experience (Steps 14–17)
-14. **Dynamic `LiveProctoring.tsx` Overhaul** — On mount, fetch exam data from `GET /api/exam/:examId` and questions from `GET /api/questions/:examId`. Group questions by `sectionType`. Render a section sidebar/nav: student can switch between Aptitude, Logical, Coding sections. Timer is per-exam (not per-section).
-15. **Coding Section Renderer [NEW]** — Component `CodingQuestion.tsx`. Embed a Monaco Editor (via `@monaco-editor/react`) with syntax highlighting. Show starter code, language badge, and test case panel. On "Run Tests" → evaluate locally via `Function()` for JS or display "submitted for evaluation" placeholder for other languages. Store user code in exam answers state.
-16. **Aptitude & Logical Renderer** — Reuse the MCQ component but with section-specific styling. Aptitude: quantitative/data-interpretation UI with optional attached images. Logical: pattern-matching, series completion, arrangement questions. Both are still option-based but visually distinguished with section color coding and icons.
-17. **Student Dashboard Exam Cards** — Update `StudentDashboard.tsx` exam cards to show section breakdown (e.g., "MCQ: 20 | Coding: 5 | Aptitude: 15 | Logical: 10"). Show difficulty distribution bar. Show "Starts in X hours" countdown for upcoming exams instead of raw ISO date.
+✅ Step 3: CreateExamModal.tsx - Fix payload key
+- Ensure POST body sends `id: examId` alongside `examId` for backward compat
 
-### Phase E — Submission & Verification (Step 18)
-18. **Answer Persistence & Scoring** — On exam submit (`POST /api/exam/:examId/submit`), save answers to a new DynamoDB table `SecureGuardSubmissions` (PK: `submissionId`, attributes: `sessionId`, `examId`, `studentId`, `answers` (M), `score` (N), `submittedAt` (S), `autoSubmitted` (BOOL)). Backend auto-grades MCQ/Aptitude/Logical sections. Coding section stores code; grading is deferred. Include score summary in the PDF report.
+### Phase B: Validation and Smart Defaults (Steps 4-7)
+
+Step 4: QuestionEditor.tsx - Dynamic starter code placeholder
+- Switch placeholder based on selected language
+- JS: `function main() { }`, Python: `def main():`, Java: `public static void main`, C++: `int main() { }`
+- Auto-fill starter code template when language changes and code is empty
+
+Step 5: QuestionEditor.tsx - Smart point defaults per type
+- When sectionType changes, auto-set: MCQ=2, Aptitude=3, Logical=3, Coding=10
+- Cap input between 1-100
+
+Step 6: QuestionEditor.tsx - Better default test case
+- Pre-populate first test case with `{ input: '5', expectedOutput: '25' }`
+- Show helper text explaining test case format
+
+Step 7: CreateExamModal.tsx - Submit-time validation
+- Every question must have non-empty text
+- MCQ/Aptitude/Logical: at least 2 non-empty options, correctAnswer within bounds
+- Coding: at least 1 test case with non-empty input AND expectedOutput
+- Coding: warn if starter code syntax mismatches language (def in JS, function in Python)
+- Points must be 1-100 per question
+- Show inline per-question error badges with clear messages
+
+### Phase C: Backend Hardening (Steps 8-10)
+
+Step 8: dashboardController.ts - Server-side validation
+- Validate sections array structure if provided
+- Validate startTime is a parseable ISO string
+- Auto-compute endTime if missing
+- Reject if totalQuestions is negative
+
+Step 9: questionController.ts - Validate batch questions
+- Each question needs examId, sectionType, non-empty text
+- Coding questions need codingConfig with language and at least 1 testCase
+- Return per-question errors in response body
+
+Step 10: awsService.ts - Guard createExam
+- Throw early if examId is falsy
+- Ensure enabledStatus stringification is consistent
+
+### Phase D: Student Experience Polish (Steps 11-12)
+
+Step 11: LiveProctoring.tsx - Render by section type
+- After loading questions from API, group into sections
+- MCQ/Aptitude/Logical render with radio buttons
+- Coding renders with textarea code editor
+- Section tabs/navigation sidebar
+
+Step 12: StudentDashboard.tsx - Show section breakdown on exam cards
+- Display section badges: MCQ: 20, Coding: 5, etc.
+- Show difficulty distribution if available

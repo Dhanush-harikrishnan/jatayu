@@ -217,6 +217,19 @@ async function main() {
         enabledStatus: 'true',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
+      },
+      {
+        examId: 'EXAM-PROGRAMMING-101',
+        title: 'Foundations of Programming',
+        description: 'An introductory exam testing basic logic, problem-solving, and simple coding skills.',
+        duration: 60,
+        startTime: new Date().toISOString(),
+        endTime: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+        enabled: true,
+        requireFullscreen: true,
+        enabledStatus: 'true',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
     ];
 
@@ -245,24 +258,52 @@ async function main() {
         { id: 3, text: "Which protocol converts a domain name to an IP address?", options: ["DHCP", "DNS", "ARP", "FTP"], correct: 1 },
         { id: 4, text: "What does TCP stand for?", options: ["Transfer Control Protocol", "Transmission Control Protocol", "Tunneling Communication Protocol", "Terminal Control Protocol"], correct: 1 },
         { id: 5, text: "Which device operates at Layer 3 of the OSI model?", options: ["Switch", "Hub", "Router", "Repeater"], correct: 2 },
+      ],
+      "EXAM-PROGRAMMING-101": [
+        { id: 1, type: "MCQ", text: "What is the primary function of a loop in programming?", options: ["Store data temporarily", "Execute a block of code continuously", "Perform conditional checks", "Serve as an entry point for execution"], correct: 1 },
+        { id: 2, type: "MCQ", text: "Which operator is typically used for checking equality in most programming languages?", options: ["=", "==", "!==", "=>"], correct: 1 },
+        { id: 3, type: "MCQ", text: "What is an array?", options: ["A function definition", "A collection of items stored at contiguous memory locations", "A syntax error identifier", "An application library template"], correct: 1 },
+        { id: 4, type: "MCQ", text: "What defines an IDE?", options: ["Internal Development Enterprise", "Integrated Delivery Environment", "Integrated Development Environment", "Internal Delivery Extension"], correct: 2 },
+        { id: 5, type: "MCQ", text: "What is a 'bug' in programming terminology?", options: ["An intended feature", "An error or flaw in the program", "A documentation file", "A piece of compiled software code"], correct: 1 },
+        {
+          id: 6,
+          type: "CODING",
+          text: "Write a function `run(input)` that takes a number as input and returns its square. The input is passed as a string representing a number.",
+          codingConfig: {
+            language: "javascript",
+            starterCode: "function run(input) {\n  // Your code here\n  return Number(input);\n}",
+            timeLimit: 1000,
+            testCases: [
+              { input: "5", expectedOutput: "25" },
+              { input: "10", expectedOutput: "100" }
+            ]
+          }
+        }
       ]
     };
 
-    for (const [examKey, questions] of Object.entries(QUESTION_BANK)) {
+    for (const [examKey, qs] of Object.entries(QUESTION_BANK as any)) {
       const targetExamId = examKey === 'default' ? 'EXAM-101' : examKey;
+      const questions = qs as any[];
       for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        const qItem = {
+        const q = questions[i] as any;
+        const qItem: any = {
           questionId: `${targetExamId}-Q${q.id}`,
           examId: targetExamId,
-          sectionType: 'MCQ',
+          sectionType: q.type || 'MCQ',
           order: i,
           text: q.text,
-          options: q.options,
-          correctAnswer: q.correct,
-          difficulty: 'medium',
-          points: 1
+          difficulty: 'easy',
+          points: q.type === 'CODING' ? 10 : 2
         };
+
+        if (q.type === 'CODING') {
+          qItem.codingConfig = q.codingConfig;
+        } else {
+          qItem.options = q.options;
+          qItem.correctAnswer = q.correct;
+        }
+
         await dynamoClient.send(new PutItemCommand({
           TableName: questionsTableName,
           Item: marshall(qItem, { removeUndefinedValues: true })
