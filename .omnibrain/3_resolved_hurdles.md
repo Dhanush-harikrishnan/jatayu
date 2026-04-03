@@ -54,3 +54,7 @@ px tsc --noEmit\ for type check validation from the project root crashed due to 
    - *Issue*: StudentDashboard showed total questions but lacked critical breakdown contexts on upcoming and active exams, leaving students blind. LiveProctoring.tsx layout and grouping logic was partially built but lacked mapping parity with S3 schemas.
    - *Resolution*: Injected sections mapping into Exam typing across index.ts and dashboardController.ts. Extracted payload configurations mapped the response natively into dashboard badges.
 
+
+14. **DynamoDB Validation on Seed Automation:**
+   - *Issue*: \demo-data-seed.ts\ failed continuously yielding \ValidationException: Missing the key id in the item\ while seeding mock student violations into the \ProctoringEvents\ table.
+   - *Resolution*: Audited the DynamoDB Table Schema (\wsService.ts\) and updated the Item payload in the seeder to explicitly match \id: { S: uniqueId }\ instead of solely providing \SessionId\ and \EventTime#ViolationType\.

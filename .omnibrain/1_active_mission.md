@@ -84,17 +84,8 @@ Files to modify:
 - MODIFY: src/routes/dashboardRoute.ts (add analytics endpoints)
 - MODIFY: app/src/App.tsx or router (add /admin/analytics route)
 
-### FEATURE 6: Exam Integrity Certificate with QR Verification
-- After exam, generate a tamper-proof integrity certificate
-- Contains: Student name, exam title, trust score, violation count, SHA-256 hash of all session data
-- QR code on certificate links to a verification page showing if hash matches
-- PDF certificate with professional design (university-style)
-- WHY IT WINS: Blockchain-lite approach without the complexity. Shows real-world applicability.
-
-Files to modify:
-- NEW: src/services/certificateService.ts (hash generation + certificate PDF)
-- MODIFY: src/controllers/examController.ts (generate certificate on submit)
-- NEW: app/src/pages/CertificateVerify.tsx (QR verification page)
+### FEATURE 6: Exam Integrity Certificate with QR Verification (REMOVED)
+- Skipped
 
 ### FEATURE 7: Voice Activity Monitoring (using Web Audio API)
 - Capture ambient audio during exam via getUserMedia audio track
@@ -113,24 +104,24 @@ Files to modify:
 ## PRIORITY ORDER (Build Sequence)
 
 ### Sprint 1: Core Differentiators (Do These First - 4 hours)
-- Step 1: Trust Score Engine (feature 1) - backend service + socket emission
-- Step 2: Trust Score UI - animated gauge on admin student cards
-- Step 3: Anti-Cheat Detection (feature 4) - browser lockdown utilities
-- Step 4: Voice Activity Monitor (feature 7) - Web Audio API integration
+- [x] Step 1: Trust Score Engine (feature 1) - backend service + socket emission
+- [x] Step 2: Trust Score UI - animated gauge on admin student cards
+- [x] Step 3: Anti-Cheat Detection (feature 4) - browser lockdown utilities
+- [x] Step 4: Voice Activity Monitor (feature 7) - Web Audio API integration
 
 ### Sprint 2: AI Intelligence Layer (Next - 3 hours)
-- Step 5: AI Report Generator (feature 2) - LLM integration
-- Step 6: Embed AI summary in PDF reports
-- Step 7: Show AI summary in admin violation modal
+- [x] Step 5: AI Report Generator (feature 2) - LLM integration
+- [x] Step 6: Embed AI summary in PDF reports
+- [x] Step 7: Show AI summary in admin violation modal
 
 ### Sprint 3: Visual Impact (Final Polish - 3 hours)
-- Step 8: Risk Heatmap (feature 3) - admin dashboard view
-- Step 9: Post-Exam Analytics (feature 5) - charts page
-- Step 10: Integrity Certificate (feature 6) - hash + QR + PDF
+- [x] Step 8: Risk Heatmap (feature 3) - admin dashboard view
+- [x] Step 9: Post-Exam Analytics (feature 5) - charts page
+- [-] Step 10: Integrity Certificate (feature 6) - SKIPPED
 
 ### Sprint 4: Demo Prep (Last hour)
-- Step 11: Seed realistic demo data (multiple students, varied trust scores)
-- Step 12: Rehearse 5-minute demo flow: Login -> Create Exam -> Student Takes Exam -> Admin Watches Heatmap -> Trust Score Drops -> AI Report Generated -> Certificate Issued
+- [x] Step 11: Seed realistic demo data (multiple students, varied trust scores)
+- [ ] Step 12: Rehearse 5-minute demo flow: Login -> Create Exam -> Student Takes Exam -> Admin Watches Heatmap -> Trust Score Drops -> AI Report Generated
 
 ---
 
@@ -145,9 +136,8 @@ Files to modify:
 7. SHOW: Admin clicks student -> Live drawer with mobile feed + violations (15 seconds)
 8. SHOW: Exam submits -> AI Report generates: "During the exam, Student X exhibited..." (30 seconds)
 9. SHOW: PDF report with evidence snapshots + AI summary (20 seconds)
-10. SHOW: Integrity Certificate with QR code (15 seconds)
-11. SHOW: Analytics dashboard with charts across all students (20 seconds)
-12. CLOSE: "Multi-camera, multi-modal, AI-analyzed, certificate-verified proctoring" (10 seconds)
+10. SHOW: Analytics dashboard with charts across all students (20 seconds)
+11. CLOSE: "Multi-camera, multi-modal, AI-analyzed, certificate-verified proctoring" (10 seconds)
 
 Total: ~4 minutes with buffer
 

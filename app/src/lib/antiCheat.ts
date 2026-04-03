@@ -42,7 +42,7 @@ export class AntiCheatEngine {
     
     // Hardware concurrency is typically exactly 2, 4, 8, 16 on real machines. Odd numbers or very low are suspicious.
     const cores = navigator.hardwareConcurrency || 2;
-    // @ts-ignore - deviceMemory isn't standard
+    // @ts-expect-error - deviceMemory isn't standard
     const mem = navigator.deviceMemory || 4;
 
     if (isVMUserAgent || (cores === 1 && mem < 2)) {
